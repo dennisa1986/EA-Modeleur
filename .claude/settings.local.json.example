@@ -1,0 +1,23 @@
+{
+  "_comment": [
+    "Copy this file to settings.local.json to configure Claude Code shell permissions.",
+    "settings.local.json is gitignored — it is machine-specific.",
+    "Add or remove entries from 'allow' to match your local workflow.",
+    "Wildcards: Bash(pytest*) allows any pytest invocation.",
+    "Reference: https://docs.anthropic.com/en/docs/claude-code/settings"
+  ],
+  "permissions": {
+    "allow": [
+      "Bash(pytest*)",
+      "Bash(ruff*)",
+      "Bash(mypy*)",
+      "Bash(uv*)",
+      "Bash(python*)",
+      "Bash(git status*)",
+      "Bash(git log*)",
+      "Bash(git diff*)",
+      "Bash(git grep*)",
+      "Bash(git show*)"
+    ]
+  }
+}

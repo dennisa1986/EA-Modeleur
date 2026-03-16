@@ -58,6 +58,7 @@ markers   = [
     "unit: fast, isolated unit tests (no I/O)",
     "integration: multi-stage wiring tests",
     "golden: byte-exact comparison against golden artefacts in data/golden/",
+    "regression: regression tests against known-good outputs",
 ]
 
 # ---------------------------------------------------------------------------
