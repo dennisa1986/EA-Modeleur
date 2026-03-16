@@ -16,7 +16,7 @@ class TestPipelineError:
         assert err.context == {}
 
     def test_context_is_stored(self) -> None:
-        err = PipelineError(ErrorCode.META_001, "bad xmi", context={"path": "a.xmi"})
+        err = PipelineError(ErrorCode.METAMODEL_PARSE_ERROR, "bad xmi", context={"path": "a.xmi"})
         assert err.context["path"] == "a.xmi"
 
 

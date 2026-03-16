@@ -1,6 +1,17 @@
 {
   "permissions": {
     "allow": [
+      "Bash(pytest*)",
+      "Bash(ruff*)",
+      "Bash(mypy*)",
+      "Bash(uv*)",
+      "Bash(python*)",
+      "Bash(git status*)",
+      "Bash(git log*)",
+      "Bash(git diff*)",
+      "Bash(git grep*)",
+      "Bash(git show*)",
+      "Bash(mv:*)",
       "Bash(cd:*)"
     ]
   }

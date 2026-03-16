@@ -43,3 +43,6 @@ outputs/
 .env
 .env.*
 !.env.example
+
+# Claude Code local settings (environment-specific — copy from settings.local.json.example)
+.claude/settings.local.json

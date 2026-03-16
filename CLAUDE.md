@@ -5,7 +5,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Project
 
 Production-grade MBSE pipeline that transforms raw input (text, images, PDFs, screenshots) into
-validated, Enterprise Architect 17.1-importable XMI artefacts via a mandatory canonical JSON
+validated, Enterprise Architect 17.1-importable artefacts via a mandatory canonical JSON
 intermediate model.
 
 Package: `ea_mbse_pipeline` (src-layout under `src/`)
@@ -37,7 +37,7 @@ ruff check src tests
 # Type-check
 mypy src
 
-# Pipeline CLI (placeholder until stages are implemented)
+# Pipeline CLI (stubs — stages not yet implemented)
 ea-mbse-pipeline --help
 ea-ingest --help
 ea-validate --help
@@ -52,40 +52,43 @@ The pipeline is a **linear, stage-gated chain**. Every stage must complete
 successfully before the next stage starts. No stage may bypass the canonical model.
 
 ```
-Raw Input (text / image / PDF / screenshot)
-    │
-    ▼
-┌─────────────┐
-│   Ingest    │  src/ea_mbse_pipeline/ingest/
-└──────┬──────┘
-       │ RawContent
-       ▼
-┌─────────────────────────────────────────┐
-│         Canonical Model (JSON)          │  src/ea_mbse_pipeline/canonical/
-└────────────────────┬────────────────────┘
-                     │  CanonicalModel
-          ┌──────────┴──────────┐
-          ▼                     ▼
-  ┌──────────────┐     ┌──────────────────┐
-  │  Retrieval   │     │   Validation     │  src/ea_mbse_pipeline/validation/
-  │  (context/  │     │  (metamodel      │
-  │   RAG)      │     │   rules)         │
-  └──────┬───────┘     └───────┬──────────┘
-         │                     │ ValidationReport
-         └──────────┬──────────┘
-                    ▼
-          ┌──────────────────┐
-          │  Serialization   │  src/ea_mbse_pipeline/serialization/
-          └────────┬─────────┘
-                   │ SerializedArtefact (XMI / CSV)
-                   ▼
-          ┌──────────────────┐
-          │    EA Test       │  src/ea_mbse_pipeline/ea_test/
-          │ (import + regr.) │
-          └──────────────────┘
+Raw Input (text / image / PDF / screenshot)     Metamodel (XMI)
+               │                                      │
+               ▼                                      ▼
+       ┌──────────────┐                   ┌──────────────────────┐
+       │    Ingest    │  ingest/          │  MetamodelCompiler   │  metamodel/
+       └──────┬───────┘                   └──────────┬───────────┘
+              │ RawContent                            │ RuleSet
+              │                                       │
+              └──────────────┬────────────────────────┘
+                             │
+                             ▼
+                 ┌───────────────────────┐
+                 │  Retrieval / Evidence │  retrieval/
+                 └───────────┬───────────┘
+                             │ RetrievalResult
+                             ▼
+              ┌──────────────────────────────┐
+              │      Canonical Model         │  canonical/
+              │         (JSON)               │  schemas/canonical_model.schema.json
+              └──────────────┬───────────────┘
+                             │ CanonicalModel  ← MANDATORY — no stage bypasses this
+                             ▼
+                    ┌─────────────────┐
+                    │   Validation    │  validation/
+                    └────────┬────────┘
+                             │ ValidationReport
+                             ▼
+                    ┌─────────────────┐
+                    │  Serialization  │  serialization/  (pluggable SerializerProtocol)
+                    └────────┬────────┘
+                             │ SerializedArtefact
+                             ▼
+                    ┌─────────────────┐
+                    │    EA Checks    │  ea_test/
+                    └─────────────────┘
 
 Cross-cutting:
-  Metamodel   src/ea_mbse_pipeline/metamodel/     XMI → RuleSet
   Shared      src/ea_mbse_pipeline/shared/         errors, logging, provenance, types
   Orchestr.   src/ea_mbse_pipeline/orchestration/  PipelineOrchestrator (DI)
 ```
@@ -94,14 +97,14 @@ Cross-cutting:
 
 | Stage | Module | Input | Output |
 |---|---|---|---|
-| Ingest | `ingest` | file path | `RawContent` |
-| CanonicalBuilder | `canonical` | `RawContent` | `CanonicalModel` |
-| MetamodelCompiler | `metamodel` | XMI path | `RuleSet` |
-| Retrieval | `retrieval` | query + corpus | `RetrievalResult` |
-| Validator | `validation` | `CanonicalModel` + `RuleSet` | `ValidationReport` |
-| Serializer | `serialization` | `CanonicalModel` | `SerializedArtefact` |
-| EA Test | `ea_test` | `SerializedArtefact` | `EATestReport` |
-| Orchestrator | `orchestration` | config | `PipelineResult` |
+| Ingest | `ea_mbse_pipeline.ingest` | file path | `RawContent` |
+| MetamodelCompiler | `ea_mbse_pipeline.metamodel` | XMI path | `RuleSet` |
+| Retrieval | `ea_mbse_pipeline.retrieval` | query + corpus | `RetrievalResult` |
+| CanonicalBuilder | `ea_mbse_pipeline.canonical` | `RawContent` + evidence | `CanonicalModel` |
+| Validator | `ea_mbse_pipeline.validation` | `CanonicalModel` + `RuleSet` | `ValidationReport` |
+| Serializer | `ea_mbse_pipeline.serialization` | `CanonicalModel` | `SerializedArtefact` |
+| EA Checks | `ea_mbse_pipeline.ea_test` | `SerializedArtefact` | `EATestReport` |
+| Orchestrator | `ea_mbse_pipeline.orchestration` | config | `PipelineResult` |
 
 ---
 
@@ -124,17 +127,18 @@ a corroborating text or metamodel reference in its `provenance`.
 
 ### No silent degradation
 Serializers must fail loudly. If a canonical model element cannot be mapped to a
-valid XMI construct, raise a typed `SerializationError` with an error code. Never
-silently drop elements, default to placeholder values, or produce partial XMI.
+valid serialized artefact, raise `PipelineError(ErrorCode.SERIAL_UNMAPPABLE_ELEMENT)`.
+Never silently drop elements, default to placeholder values, or produce partial output.
 
 ### Every derivation must have provenance
 Every `ModelElement`, `ModelRelationship`, and `ModelDiagram` in the canonical model
 must carry a `provenance` field identifying its source (file path + chunk/page/line).
-Use `shared.provenance.Provenance`.
+Use `ea_mbse_pipeline.shared.provenance.Provenance`.
 
 ### Error codes
-All pipeline errors must carry a structured error code from `shared.errors.ErrorCode`.
-Never raise bare `Exception` or `ValueError` in pipeline code.
+All pipeline errors must carry a structured error code from
+`ea_mbse_pipeline.shared.errors.ErrorCode`. Never raise bare `Exception` or `ValueError`
+in pipeline code.
 
 ### Python style
 - Python ≥ 3.11. Use `StrEnum`, `match/case`, `X | Y` unions, `Self`.
@@ -148,11 +152,17 @@ Never raise bare `Exception` or `ValueError` in pipeline code.
 - `orchestration/` wires stages via constructor injection — no global singletons.
 - `shared/` contains only cross-cutting utilities; no stage-specific logic.
 
+### Serializer target format
+`SerializationFormat` enumerates `XMI` and `CSV` as candidates. The concrete format
+for production is not yet locked — EA XMI 2.1 round-trip fidelity through EA 17.1 is
+still being validated technically. Use `SerializerProtocol` for pluggable implementations.
+See `.claude/rules/ea-xmi-conventions.md` for XMI-specific constraints.
+
 ### Testing
 - Mark tests: `@pytest.mark.unit`, `@pytest.mark.integration`, `@pytest.mark.golden`.
 - Unit tests must not touch the filesystem or network.
-- Golden tests compare serialiser output byte-for-byte against `data/golden/`.
-- Test-first where the contract is well-defined (models, validators, serialisers).
+- Golden tests compare serializer output byte-for-byte against `data/golden/`.
+- Test-first where the contract is well-defined (models, validators, serializers).
 
 ### Sprint discipline
 Every sprint must deliver working, tested code — no "skeleton PRs" that only move
@@ -165,11 +175,11 @@ with a milestone reference.
 
 ```
 data/raw/metamodel/     XMI metamodel files (normative input)
-data/raw/screenshots/   Screenshot input (supporting only)
+data/raw/screenshots/   Screenshot input (supporting only, not committed)
 data/raw/corpus/        Text / PDF corpus documents
-data/processed/         Intermediate artefacts (not committed by default)
+data/processed/         Intermediate artefacts (not committed)
 data/fixtures/          Reusable test fixture data (committed)
-data/golden/            Golden XMI/CSV artefacts for regression (committed)
+data/golden/            Golden artefacts for regression (committed)
 outputs/                Pipeline run outputs (not committed)
 ```
 
@@ -188,20 +198,30 @@ See `.claude/rules/ea-xmi-conventions.md`. Key points:
 
 ## .claude/ directory
 
+### Rules
 | Path | Purpose |
 |---|---|
 | `.claude/rules/coding-standards.md` | Python conventions, typing, testing |
 | `.claude/rules/ea-xmi-conventions.md` | EA 17.1 XMI format rules |
 | `.claude/rules/data-governance.md` | Provenance, data tiers, golden files |
-| `.claude/agents/metamodel-analyst.md` | Agent: analyse XMI, implement MetamodelCompiler |
-| `.claude/agents/pipeline-debugger.md` | Agent: trace and fix pipeline failures |
-| `.claude/agents/xmi-serializer.md` | Agent: implement and repair XMI serializer |
-| `.claude/skills/validate-canonical.md` | Skill: validate a canonical model JSON |
-| `.claude/skills/compile-metamodel.md` | Skill: compile XMI to RuleSet JSON |
 
----
+### Agents (pipeline roles)
+| Path | Role |
+|---|---|
+| `.claude/agents/corpus-ingester.md` | Implement raw input ingestion stage |
+| `.claude/agents/metamodel-guardian.md` | Analyse XMI, implement MetamodelCompiler |
+| `.claude/agents/evidence-retriever.md` | Implement corpus RAG / retrieval stage |
+| `.claude/agents/canonical-modeler.md` | Build and maintain CanonicalModel stage |
+| `.claude/agents/ea-serializer.md` | Implement and repair serialization stage |
+| `.claude/agents/import-validator.md` | Implement EA import checks / regression |
+| `.claude/agents/pipeline-debugger.md` | Trace and fix pipeline failures |
 
-## Note on ea_pipeline/
-
-`src/ea_pipeline/` is an earlier iteration of this package. It is superseded by
-`src/ea_mbse_pipeline/`. Do not add new code to `ea_pipeline/`.
+### Playbooks (step-by-step workflows)
+| Path | Workflow |
+|---|---|
+| `.claude/playbooks/ingest-kaderdocs.md` | Ingest framework documents into corpus |
+| `.claude/playbooks/compile-metamodel.md` | Compile XMI metamodel to RuleSet JSON |
+| `.claude/playbooks/generate-canonical-model.md` | Build a CanonicalModel from raw input |
+| `.claude/playbooks/validate-canonical.md` | Validate a CanonicalModel JSON |
+| `.claude/playbooks/serialize-ea.md` | Serialize a CanonicalModel to target format |
+| `.claude/playbooks/run-import-validation.md` | Run EA import checks on serialized output |
