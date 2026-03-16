@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "canonical_model",
+  "title": "CanonicalModel",
+  "description": "Language-neutral intermediate model produced by the MBSE pipeline.",
+  "type": "object",
+  "required": ["schema_version", "elements", "relationships", "diagrams"],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "description": "Schema version, e.g. '1.0'."
+    },
+    "source_description": {
+      "type": "string"
+    },
+    "elements": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/ModelElement" }
+    },
+    "relationships": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/ModelRelationship" }
+    },
+    "diagrams": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/ModelDiagram" }
+    }
+  },
+  "$defs": {
+    "ModelElement": {
+      "type": "object",
+      "required": ["id", "kind", "name"],
+      "properties": {
+        "id":           { "type": "string" },
+        "ea_guid":      { "type": ["string", "null"] },
+        "kind":         { "type": "string" },
+        "name":         { "type": "string" },
+        "stereotype":   { "type": ["string", "null"] },
+        "package_path": { "type": "string" },
+        "attributes":   { "type": "array" },
+        "operations":   { "type": "array" },
+        "tagged_values":{ "type": "object" },
+        "notes":        { "type": "string" }
+      }
+    },
+    "ModelRelationship": {
+      "type": "object",
+      "required": ["id", "kind", "source_id", "target_id"],
+      "properties": {
+        "id":           { "type": "string" },
+        "kind":         { "type": "string" },
+        "source_id":    { "type": "string" },
+        "target_id":    { "type": "string" },
+        "name":         { "type": "string" },
+        "stereotype":   { "type": ["string", "null"] },
+        "tagged_values":{ "type": "object" }
+      }
+    },
+    "ModelDiagram": {
+      "type": "object",
+      "required": ["id", "name", "diagram_type"],
+      "properties": {
+        "id":           { "type": "string" },
+        "name":         { "type": "string" },
+        "diagram_type": { "type": "string" },
+        "package_path": { "type": "string" },
+        "element_ids":  { "type": "array", "items": { "type": "string" } }
+      }
+    }
+  }
+}

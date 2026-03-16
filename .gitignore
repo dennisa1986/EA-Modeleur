@@ -1,0 +1,45 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+.eggs/
+.venv/
+venv/
+.uv/
+
+# Test / coverage
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# EA artefacts (binary — do not commit)
+*.eap
+*.eapx
+*.qea
+*.feap
+
+# Pipeline data — do not commit derived or large raw data
+data/raw/screenshots/
+data/processed/
+outputs/
+
+# Secrets
+.env
+.env.*
+!.env.example

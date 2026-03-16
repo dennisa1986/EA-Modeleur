@@ -1,0 +1,79 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "ea-mbse-pipeline"
+version = "0.1.0"
+description = "Production-grade MBSE pipeline for Enterprise Architect 17.1"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    # XMI / XML
+    "lxml>=5.2",
+    # Data validation & settings
+    "pydantic>=2.7",
+    "pydantic-settings>=2.3",
+    # PDF ingestion
+    "pypdf>=4.2",
+    # Image ingestion
+    "pillow>=10.3",
+    # JSON Schema validation
+    "jsonschema>=4.22",
+    # CLI
+    "typer>=0.12",
+    "rich>=13.7",
+]
+
+[project.optional-dependencies]
+dev = [
+    # Testing
+    "pytest>=8.2",
+    "pytest-cov>=5.0",
+    "pytest-xdist>=3.5",
+    # Linting / formatting
+    "ruff>=0.4",
+    # Type checking
+    "mypy>=1.10",
+    "lxml-stubs>=0.5",
+]
+
+[project.scripts]
+# Placeholder entry points — implement as pipeline stages are built out
+ea-mbse-pipeline = "ea_mbse_pipeline.cli:app"
+ea-ingest        = "ea_mbse_pipeline.cli:ingest"
+ea-validate      = "ea_mbse_pipeline.cli:validate"
+ea-serialize     = "ea_mbse_pipeline.cli:serialize"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/ea_mbse_pipeline"]
+
+# ---------------------------------------------------------------------------
+# pytest
+# ---------------------------------------------------------------------------
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts   = "-ra -q --tb=short"
+markers   = [
+    "unit: fast, isolated unit tests (no I/O)",
+    "integration: multi-stage wiring tests",
+    "golden: byte-exact comparison against golden artefacts in data/golden/",
+]
+
+# ---------------------------------------------------------------------------
+# ruff
+# ---------------------------------------------------------------------------
+[tool.ruff]
+src         = ["src"]
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "TCH"]
+
+# ---------------------------------------------------------------------------
+# mypy
+# ---------------------------------------------------------------------------
+[tool.mypy]
+python_version        = "3.11"
+strict                = true
+packages              = ["ea_mbse_pipeline"]
