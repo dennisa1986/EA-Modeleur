@@ -127,7 +127,8 @@ tests/
 
 .claude/
   agents/                Specialized Claude Code agents per pipeline role
-  playbooks/             Step-by-step workflow guides
+  skills/                Claude-native skills — invoke with /skill-name
+  playbooks/             Human reference — extended workflow documentation
   rules/                 Coding and domain conventions
 ```
 

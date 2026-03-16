@@ -216,7 +216,25 @@ See `.claude/rules/ea-xmi-conventions.md`. Key points:
 | `.claude/agents/import-validator.md` | Implement EA import checks / regression |
 | `.claude/agents/pipeline-debugger.md` | Trace and fix pipeline failures |
 
-### Playbooks (step-by-step workflows)
+### Skills (Claude-native invocation — use `/skill-name`)
+Skills are invoked directly by Claude Code using `/skill-name`. They contain
+concrete, executable instructions with code examples and quality gates.
+
+| Path | Invocation | Purpose |
+|---|---|---|
+| `.claude/skills/ingest-kaderdocs/SKILL.md` | `/ingest-kaderdocs` | Ingest framework documents into corpus |
+| `.claude/skills/compile-metamodel/SKILL.md` | `/compile-metamodel` | Compile XMI metamodel to RuleSet JSON |
+| `.claude/skills/generate-canonical-model/SKILL.md` | `/generate-canonical-model` | Build a CanonicalModel from raw input |
+| `.claude/skills/validate-canonical/SKILL.md` | `/validate-canonical` | Validate a CanonicalModel JSON |
+| `.claude/skills/serialize-ea/SKILL.md` | `/serialize-ea` | Serialize a CanonicalModel to target format |
+| `.claude/skills/run-import-validation/SKILL.md` | `/run-import-validation` | Run EA import checks on serialized output |
+
+### Playbooks (human reference — extended workflow documentation)
+Playbooks are step-by-step guides for human operators. They explain the *why*
+behind each step, cover edge cases, and are consulted during onboarding or
+troubleshooting. Skills derive their instructions from playbooks but are
+self-contained.
+
 | Path | Workflow |
 |---|---|
 | `.claude/playbooks/ingest-kaderdocs.md` | Ingest framework documents into corpus |
