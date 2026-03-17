@@ -17,7 +17,6 @@ from ea_mbse_pipeline.ingest.file_discovery import (
     ensure_directory,
 )
 
-
 # ---------------------------------------------------------------------------
 # discover_corpus_files
 # ---------------------------------------------------------------------------
@@ -60,9 +59,7 @@ class TestDiscoverCorpusFiles:
     # Recursive discovery
     # ------------------------------------------------------------------
 
-    def test_recursive_default_discovers_subdirectory_files(
-        self, tmp_path: Path
-    ) -> None:
+    def test_recursive_default_discovers_subdirectory_files(self, tmp_path: Path) -> None:
         sub = tmp_path / "subdir"
         sub.mkdir()
         (tmp_path / "top.txt").write_text("top level")
@@ -72,18 +69,14 @@ class TestDiscoverCorpusFiles:
         assert "top.txt" in names
         assert "nested.txt" in names
 
-    def test_recursive_true_discovers_deeply_nested_files(
-        self, tmp_path: Path
-    ) -> None:
+    def test_recursive_true_discovers_deeply_nested_files(self, tmp_path: Path) -> None:
         deep = tmp_path / "a" / "b" / "c"
         deep.mkdir(parents=True)
         (deep / "deep.txt").write_text("deep content")
         result = discover_corpus_files(tmp_path, recursive=True)
         assert any(p.name == "deep.txt" for p in result)
 
-    def test_recursive_false_skips_subdirectory_files(
-        self, tmp_path: Path
-    ) -> None:
+    def test_recursive_false_skips_subdirectory_files(self, tmp_path: Path) -> None:
         sub = tmp_path / "subdir"
         sub.mkdir()
         (tmp_path / "top.txt").write_text("top level")
@@ -93,9 +86,7 @@ class TestDiscoverCorpusFiles:
         assert "top.txt" in names
         assert "nested.txt" not in names
 
-    def test_recursive_results_sorted_across_subdirectories(
-        self, tmp_path: Path
-    ) -> None:
+    def test_recursive_results_sorted_across_subdirectories(self, tmp_path: Path) -> None:
         sub = tmp_path / "sub"
         sub.mkdir()
         (tmp_path / "b.txt").write_text("b")
@@ -175,9 +166,7 @@ class TestDiscoverMetamodelFiles:
 
 @pytest.mark.unit
 class TestDiscoverScreenshotFiles:
-    def test_missing_directory_returns_empty_without_error(
-        self, tmp_path: Path
-    ) -> None:
+    def test_missing_directory_returns_empty_without_error(self, tmp_path: Path) -> None:
         result = discover_screenshot_files(tmp_path / "nonexistent")
         assert result == []
 

@@ -60,11 +60,13 @@ app = typer.Typer(
 
 @app.command()
 def main(
-    corpus_dir: str      = typer.Option("data/raw/corpus",       help="Corpus directory (PDF, txt, md)."),
-    metamodel_dir: str   = typer.Option("data/raw/metamodel",    help="XMI metamodel directory."),
-    screenshots_dir: str = typer.Option("data/raw/screenshots",  help="Screenshots directory (optional)."),
-    output_dir: str      = typer.Option("data/processed/ingest", help="Output base directory."),
-    log_level: str       = typer.Option("INFO",                  help="Logging level (DEBUG/INFO/WARNING)."),
+    corpus_dir: str = typer.Option("data/raw/corpus", help="Corpus directory (PDF, txt, md)."),
+    metamodel_dir: str = typer.Option("data/raw/metamodel", help="XMI metamodel directory."),
+    screenshots_dir: str = typer.Option(
+        "data/raw/screenshots", help="Screenshots directory (optional)."
+    ),
+    output_dir: str = typer.Option("data/processed/ingest", help="Output base directory."),
+    log_level: str = typer.Option("INFO", help="Logging level (DEBUG/INFO/WARNING)."),
 ) -> None:
     """Run the MBSE ingest pipeline stage."""
     configure_logging(log_level)
@@ -78,11 +80,12 @@ def main(
 
     manifest = pipeline.run()
 
+    finished = manifest.finished_at.isoformat() if manifest.finished_at else "N/A"
     typer.echo("=" * 60)
-    typer.echo(f"Ingest run complete")
+    typer.echo("Ingest run complete")
     typer.echo(f"  run_id     : {manifest.run_id}")
     typer.echo(f"  started    : {manifest.started_at.isoformat()}")
-    typer.echo(f"  finished   : {manifest.finished_at.isoformat() if manifest.finished_at else 'N/A'}")
+    typer.echo(f"  finished   : {finished}")
     typer.echo(f"  documents  : {manifest.document_count}")
     typer.echo(f"  chunks     : {manifest.chunk_count}")
     typer.echo(f"  images     : {len(manifest.image_assets)}")

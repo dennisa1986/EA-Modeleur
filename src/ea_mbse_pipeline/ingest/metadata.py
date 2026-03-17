@@ -27,17 +27,87 @@ from ea_mbse_pipeline.shared.provenance import SourceRef
 logger = get_logger(__name__)
 
 # Common English stop words — excluded from keyword extraction
-_STOP_WORDS: frozenset[str] = frozenset({
-    "a", "an", "the", "and", "or", "but", "in", "on", "at", "to", "for",
-    "of", "with", "by", "from", "is", "are", "was", "were", "be", "been",
-    "being", "have", "has", "had", "do", "does", "did", "will", "would",
-    "could", "should", "may", "might", "must", "shall", "can", "not",
-    "that", "this", "these", "those", "it", "its", "as", "so", "if",
-    "then", "than", "when", "where", "which", "who", "what", "how",
-    "also", "more", "their", "they", "them", "there", "here", "just",
-    "each", "about", "into", "over", "after", "before", "between",
-    "through", "during", "under", "while", "such", "very", "used",
-})
+_STOP_WORDS: frozenset[str] = frozenset(
+    {
+        "a",
+        "an",
+        "the",
+        "and",
+        "or",
+        "but",
+        "in",
+        "on",
+        "at",
+        "to",
+        "for",
+        "of",
+        "with",
+        "by",
+        "from",
+        "is",
+        "are",
+        "was",
+        "were",
+        "be",
+        "been",
+        "being",
+        "have",
+        "has",
+        "had",
+        "do",
+        "does",
+        "did",
+        "will",
+        "would",
+        "could",
+        "should",
+        "may",
+        "might",
+        "must",
+        "shall",
+        "can",
+        "not",
+        "that",
+        "this",
+        "these",
+        "those",
+        "it",
+        "its",
+        "as",
+        "so",
+        "if",
+        "then",
+        "than",
+        "when",
+        "where",
+        "which",
+        "who",
+        "what",
+        "how",
+        "also",
+        "more",
+        "their",
+        "they",
+        "them",
+        "there",
+        "here",
+        "just",
+        "each",
+        "about",
+        "into",
+        "over",
+        "after",
+        "before",
+        "between",
+        "through",
+        "during",
+        "under",
+        "while",
+        "such",
+        "very",
+        "used",
+    }
+)
 
 
 # Number of bytes read from the file for the content fingerprint.
@@ -47,18 +117,23 @@ _FINGERPRINT_BYTES: int = 65_536
 
 
 def doc_id_from_path(path: Path) -> str:
-    """Derive a deterministic document ID from the file name and content prefix.
+    """Derive a deterministic document ID from the file content alone.
 
-    Strategy: SHA-256 of ``<filename_bytes> + b":" + <first 64 KiB of content>``.
+    Strategy: SHA-256 of ``<first 64 KiB of content>``.
 
     This is:
-    - **Collision-resistant**: two files with the same name but different
-      content produce different IDs; two files with different names but
-      identical content also produce different IDs (name is included in the
-      hash input).
+    - **Content-based**: identical content produces the same ``doc_id``
+      regardless of filename or directory location, enabling deduplication
+      when the same document is copied or moved.
     - **Stable**: re-ingesting the same unchanged file always yields the same
       ``doc_id``, enabling idempotent upserts in SQLite.
     - **Fast**: at most 64 KiB is read, regardless of file size.
+
+    Tradeoff: two files with different names but identical first 64 KiB
+    produce the same ``doc_id``.  For real corpus documents this is the
+    desired behaviour (same content = same source); it would only be
+    surprising for generated or templated files that differ only after the
+    fingerprint boundary.
 
     Fallback: if the file cannot be read (e.g. missing or permission error),
     the strategy degrades to ``SHA-256(<filename>:<stat.st_size>)``, with size
@@ -70,7 +145,7 @@ def doc_id_from_path(path: Path) -> str:
     """
     try:
         content_prefix = path.read_bytes()[:_FINGERPRINT_BYTES]
-        key = path.name.encode() + b":" + content_prefix
+        key: bytes = content_prefix
     except OSError:
         # Fallback: name + size (legacy behaviour, used only when file is
         # unreadable, e.g. in tests that pass non-existent paths).

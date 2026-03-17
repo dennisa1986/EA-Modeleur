@@ -127,6 +127,7 @@ def save_to_sqlite(manifest: IngestRunManifest, db_path: Path) -> Path:
 # Internal insert helpers
 # ---------------------------------------------------------------------------
 
+
 def _insert_run(conn: sqlite3.Connection, m: IngestRunManifest) -> None:
     conn.execute(
         """INSERT OR REPLACE INTO ingest_runs

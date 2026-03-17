@@ -70,6 +70,10 @@ line-length = 100
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM", "TCH"]
+# TC001/TC003: moving Pydantic model imports and stdlib Path into TYPE_CHECKING blocks
+# breaks runtime isinstance checks and @runtime_checkable Protocol introspection used
+# throughout this codebase.  Re-evaluate when/if a lazy-import strategy is adopted.
+ignore = ["TC001", "TC003"]
 
 # ---------------------------------------------------------------------------
 # mypy

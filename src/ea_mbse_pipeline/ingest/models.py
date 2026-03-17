@@ -10,7 +10,7 @@ Stage 1 data contracts:
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import StrEnum
 from pathlib import Path
 
@@ -20,17 +20,18 @@ from ea_mbse_pipeline.shared.provenance import SourceRef
 
 
 def _utcnow() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 # ---------------------------------------------------------------------------
 # Single-file ingestor contract (used by IngestorProtocol / BaseIngestor)
 # ---------------------------------------------------------------------------
 
+
 class InputKind(StrEnum):
-    TEXT    = "text"
-    IMAGE   = "image"   # screenshots, diagrams — supporting only
-    PDF     = "pdf"
+    TEXT = "text"
+    IMAGE = "image"  # screenshots, diagrams — supporting only
+    PDF = "pdf"
     UNKNOWN = "unknown"
 
 
@@ -50,6 +51,7 @@ class RawContent(BaseModel):
 # ---------------------------------------------------------------------------
 # Directory-level ingest storage models
 # ---------------------------------------------------------------------------
+
 
 class SourceDocument(BaseModel):
     """Metadata record for a single ingested source file."""

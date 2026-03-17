@@ -23,7 +23,7 @@ Output written by IngestPipeline.run():
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from uuid import uuid4
 
@@ -57,14 +57,24 @@ logger = get_logger(__name__)
 
 _TEXT_EXTENSIONS: frozenset[str] = frozenset({".txt", ".md", ".rst", ".text"})
 _PDF_EXTENSIONS: frozenset[str] = frozenset({".pdf"})
-_IMAGE_EXTENSIONS: frozenset[str] = frozenset({
-    ".png", ".jpg", ".jpeg", ".gif", ".bmp", ".tiff", ".tif", ".webp",
-})
+_IMAGE_EXTENSIONS: frozenset[str] = frozenset(
+    {
+        ".png",
+        ".jpg",
+        ".jpeg",
+        ".gif",
+        ".bmp",
+        ".tiff",
+        ".tif",
+        ".webp",
+    }
+)
 
 
 # ---------------------------------------------------------------------------
 # Concrete single-file ingestor implementations
 # ---------------------------------------------------------------------------
+
 
 class PdfIngestor(BaseIngestor):
     """Ingest a single PDF file and return a RawContent with full extracted text."""
@@ -166,7 +176,8 @@ class DispatchIngestor(BaseIngestor):
             if ingestor.supports(source):
                 logger.debug(
                     "Dispatching '%s' to %s",
-                    source.name, type(ingestor).__name__,
+                    source.name,
+                    type(ingestor).__name__,
                 )
                 return ingestor.ingest(source)
         raise PipelineError(
@@ -191,6 +202,7 @@ def build_ingestor() -> DispatchIngestor:
 # ---------------------------------------------------------------------------
 # High-level IngestPipeline
 # ---------------------------------------------------------------------------
+
 
 class IngestPipeline:
     """Full ingest stage: discovers files, extracts text, chunks, and saves outputs.
@@ -244,7 +256,7 @@ class IngestPipeline:
             PipelineError: If output files cannot be written.
         """
         run_id = str(uuid4())
-        started_at = datetime.now(timezone.utc)
+        started_at = datetime.now(UTC)
         logger.info("Ingest run %s starting", run_id)
 
         manifest = IngestRunManifest(
@@ -256,16 +268,12 @@ class IngestPipeline:
         )
 
         # 1. Metamodel discovery (XMI files listed for MetamodelCompiler, not ingested)
-        xmi_files = discover_metamodel_files(
-            self._metamodel_dir, recursive=self._recursive
-        )
+        xmi_files = discover_metamodel_files(self._metamodel_dir, recursive=self._recursive)
         manifest.xmi_files = [str(f) for f in xmi_files]
         logger.info("Metamodel files: %d", len(xmi_files))
 
         # 2. Corpus ingestion
-        corpus_files = discover_corpus_files(
-            self._corpus_dir, recursive=self._recursive
-        )
+        corpus_files = discover_corpus_files(self._corpus_dir, recursive=self._recursive)
         for file_path in corpus_files:
             try:
                 doc, chunks = self._ingest_corpus_file(file_path)
@@ -273,26 +281,23 @@ class IngestPipeline:
                 manifest.chunks.extend(chunks)
                 logger.info(
                     "Ingested '%s' → %d chunk(s)",
-                    file_path.name, len(chunks),
+                    file_path.name,
+                    len(chunks),
                 )
             except PipelineError as exc:
                 manifest.errors.append(str(exc))
                 logger.error("Ingestion failed for '%s': %s", file_path.name, exc)
 
         if corpus_files and not manifest.source_documents:
-            manifest.warnings.append(
-                "All corpus files failed to ingest — check errors field."
-            )
+            manifest.warnings.append("All corpus files failed to ingest — check errors field.")
             logger.warning("All %d corpus file(s) failed to ingest", len(corpus_files))
 
         # 3. Screenshot manifest (ensure directory exists even if empty)
         ensure_directory(self._screenshots_dir)
-        image_assets = build_image_manifest(
-            self._screenshots_dir, recursive=self._recursive
-        )
+        image_assets = build_image_manifest(self._screenshots_dir, recursive=self._recursive)
         manifest.image_assets.extend(image_assets)
 
-        manifest.finished_at = datetime.now(timezone.utc)
+        manifest.finished_at = datetime.now(UTC)
 
         # 4. Persist outputs
         run_output_dir = self._output_dir / run_id
@@ -321,9 +326,7 @@ class IngestPipeline:
     # Private helpers
     # ------------------------------------------------------------------
 
-    def _ingest_corpus_file(
-        self, file_path: Path
-    ) -> tuple[SourceDocument, list[CorpusChunk]]:
+    def _ingest_corpus_file(self, file_path: Path) -> tuple[SourceDocument, list[CorpusChunk]]:
         """Dispatch extraction and chunking for a single corpus file."""
         suffix = file_path.suffix.lower()
         if suffix == ".pdf":
@@ -336,9 +339,7 @@ class IngestPipeline:
             context={"path": str(file_path)},
         )
 
-    def _ingest_pdf(
-        self, file_path: Path
-    ) -> tuple[SourceDocument, list[CorpusChunk]]:
+    def _ingest_pdf(self, file_path: Path) -> tuple[SourceDocument, list[CorpusChunk]]:
         pdf_content = extract_pdf(file_path)
         doc_id = doc_id_from_path(file_path)
         doc = build_source_document(
@@ -354,14 +355,11 @@ class IngestPipeline:
         )
         raw_chunks = chunk_pdf_pages(pdf_content.pages)
         chunks = [
-            build_corpus_chunk(raw, doc_id, str(file_path), InputKind.PDF)
-            for raw in raw_chunks
+            build_corpus_chunk(raw, doc_id, str(file_path), InputKind.PDF) for raw in raw_chunks
         ]
         return doc, chunks
 
-    def _ingest_text(
-        self, file_path: Path
-    ) -> tuple[SourceDocument, list[CorpusChunk]]:
+    def _ingest_text(self, file_path: Path) -> tuple[SourceDocument, list[CorpusChunk]]:
         try:
             text = file_path.read_text(encoding="utf-8", errors="replace")
         except OSError as exc:
@@ -384,7 +382,6 @@ class IngestPipeline:
         )
         raw_chunks = chunk_text(text, source_name=file_path.name)
         chunks = [
-            build_corpus_chunk(raw, doc_id, str(file_path), InputKind.TEXT)
-            for raw in raw_chunks
+            build_corpus_chunk(raw, doc_id, str(file_path), InputKind.TEXT) for raw in raw_chunks
         ]
         return doc, chunks

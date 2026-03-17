@@ -26,15 +26,33 @@ from ea_mbse_pipeline.shared.logging import get_logger
 logger = get_logger(__name__)
 
 # Supported file extensions per source type
-_CORPUS_EXTENSIONS: frozenset[str] = frozenset({
-    ".pdf", ".txt", ".md", ".rst", ".text",
-})
-_METAMODEL_EXTENSIONS: frozenset[str] = frozenset({
-    ".xmi", ".xml",
-})
-_IMAGE_EXTENSIONS: frozenset[str] = frozenset({
-    ".png", ".jpg", ".jpeg", ".gif", ".bmp", ".tiff", ".tif", ".webp",
-})
+_CORPUS_EXTENSIONS: frozenset[str] = frozenset(
+    {
+        ".pdf",
+        ".txt",
+        ".md",
+        ".rst",
+        ".text",
+    }
+)
+_METAMODEL_EXTENSIONS: frozenset[str] = frozenset(
+    {
+        ".xmi",
+        ".xml",
+    }
+)
+_IMAGE_EXTENSIONS: frozenset[str] = frozenset(
+    {
+        ".png",
+        ".jpg",
+        ".jpeg",
+        ".gif",
+        ".bmp",
+        ".tiff",
+        ".tif",
+        ".webp",
+    }
+)
 
 
 def _iter_files(directory: Path, *, recursive: bool) -> list[Path]:
@@ -66,12 +84,15 @@ def discover_corpus_files(corpus_dir: Path, *, recursive: bool = True) -> list[P
         logger.warning("Corpus directory does not exist: %s", corpus_dir)
         return []
     files = [
-        p for p in _iter_files(corpus_dir, recursive=recursive)
+        p
+        for p in _iter_files(corpus_dir, recursive=recursive)
         if p.suffix.lower() in _CORPUS_EXTENSIONS
     ]
     logger.info(
         "Discovered %d corpus file(s) in %s (recursive=%s)",
-        len(files), corpus_dir, recursive,
+        len(files),
+        corpus_dir,
+        recursive,
     )
     return files
 
@@ -95,12 +116,15 @@ def discover_metamodel_files(metamodel_dir: Path, *, recursive: bool = True) -> 
         logger.warning("Metamodel directory does not exist: %s", metamodel_dir)
         return []
     files = [
-        p for p in _iter_files(metamodel_dir, recursive=recursive)
+        p
+        for p in _iter_files(metamodel_dir, recursive=recursive)
         if p.suffix.lower() in _METAMODEL_EXTENSIONS
     ]
     logger.info(
         "Discovered %d metamodel file(s) in %s (recursive=%s)",
-        len(files), metamodel_dir, recursive,
+        len(files),
+        metamodel_dir,
+        recursive,
     )
     return files
 
@@ -121,12 +145,15 @@ def discover_screenshot_files(screenshots_dir: Path, *, recursive: bool = True) 
         logger.debug("Screenshots directory does not exist: %s", screenshots_dir)
         return []
     files = [
-        p for p in _iter_files(screenshots_dir, recursive=recursive)
+        p
+        for p in _iter_files(screenshots_dir, recursive=recursive)
         if p.suffix.lower() in _IMAGE_EXTENSIONS
     ]
     logger.info(
         "Discovered %d screenshot(s) in %s (recursive=%s)",
-        len(files), screenshots_dir, recursive,
+        len(files),
+        screenshots_dir,
+        recursive,
     )
     return files
 

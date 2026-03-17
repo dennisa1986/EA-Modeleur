@@ -8,8 +8,9 @@ Raises PipelineError (not bare exceptions) for all failure modes.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 from pypdf import PdfReader
 from pypdf.errors import PdfReadError
@@ -75,7 +76,7 @@ def extract_pdf(path: Path) -> PdfDocumentContent:
         ) from exc
 
     # Extract document-level metadata (values may be None in some PDFs)
-    meta = reader.metadata or {}
+    meta: dict[str, Any] = dict(reader.metadata or {})
     title = str(meta.get("/Title", "") or "")
     author = str(meta.get("/Author", "") or "")
     creation_date = str(meta.get("/CreationDate", "") or "")
@@ -87,7 +88,9 @@ def extract_pdf(path: Path) -> PdfDocumentContent:
         except Exception as exc:  # noqa: BLE001
             logger.warning(
                 "Could not extract text from page %d of '%s': %s",
-                page_num, path, exc,
+                page_num,
+                path,
+                exc,
             )
             text = ""
         pages.append(PageContent(page_number=page_num, text=text))
@@ -102,7 +105,9 @@ def extract_pdf(path: Path) -> PdfDocumentContent:
 
     logger.info(
         "Extracted %d page(s), %d chars from '%s'",
-        len(pages), total_chars, path.name,
+        len(pages),
+        total_chars,
+        path.name,
     )
     return PdfDocumentContent(
         path=path,

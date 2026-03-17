@@ -216,8 +216,7 @@ class TestIngestPipelineRun:
             "Second paragraph to confirm top-level is still ingested."
         )
         (subdir / "nested.txt").write_text(
-            "Nested file that should be ignored in non-recursive mode.\n\n"
-            "Second paragraph."
+            "Nested file that should be ignored in non-recursive mode.\n\nSecond paragraph."
         )
         pipeline = IngestPipeline(
             corpus_dir=corpus,
@@ -256,6 +255,7 @@ class TestIngestPipelineRun:
 class TestBuildIngestor:
     def test_build_ingestor_returns_dispatcher(self) -> None:
         from ea_mbse_pipeline.ingest.pipeline import DispatchIngestor
+
         ingestor = build_ingestor()
         assert isinstance(ingestor, DispatchIngestor)
 
@@ -269,7 +269,8 @@ class TestBuildIngestor:
         assert raw.source == fixture
 
     def test_unsupported_extension_raises(self, tmp_path: Path) -> None:
-        from ea_mbse_pipeline.shared.errors import PipelineError, ErrorCode
+        from ea_mbse_pipeline.shared.errors import ErrorCode, PipelineError
+
         ingestor = build_ingestor()
         fake = tmp_path / "data.bin"
         fake.write_bytes(b"\x00\x01\x02")

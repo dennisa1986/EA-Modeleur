@@ -18,24 +18,24 @@ from ea_mbse_pipeline.shared.provenance import Provenance
 
 
 class ElementKind(StrEnum):
-    CLASS       = "Class"
-    COMPONENT   = "Component"
-    ACTOR       = "Actor"
-    USE_CASE    = "UseCase"
-    INTERFACE   = "Interface"
-    NODE        = "Node"
-    ARTIFACT    = "Artifact"
-    PACKAGE     = "Package"
+    CLASS = "Class"
+    COMPONENT = "Component"
+    ACTOR = "Actor"
+    USE_CASE = "UseCase"
+    INTERFACE = "Interface"
+    NODE = "Node"
+    ARTIFACT = "Artifact"
+    PACKAGE = "Package"
 
 
 class RelationshipKind(StrEnum):
-    ASSOCIATION    = "Association"
-    DEPENDENCY     = "Dependency"
-    REALIZATION    = "Realization"
+    ASSOCIATION = "Association"
+    DEPENDENCY = "Dependency"
+    REALIZATION = "Realization"
     GENERALIZATION = "Generalization"
-    AGGREGATION    = "Aggregation"
-    COMPOSITION    = "Composition"
-    FLOW           = "Flow"
+    AGGREGATION = "Aggregation"
+    COMPOSITION = "Composition"
+    FLOW = "Flow"
 
 
 class ModelElement(BaseModel):

@@ -46,6 +46,7 @@ class RawChunk:
 # Heading detection
 # ---------------------------------------------------------------------------
 
+
 def _is_heading(line: str) -> bool:
     """Heuristic: return True if *line* looks like a section heading.
 
@@ -63,19 +64,18 @@ def _is_heading(line: str) -> bool:
     if line.isupper() and len(line) >= 3:
         return True
     words = line.split()
-    if (
+    return (
         len(words) >= 2
         and line[-1] not in ".,:;?"
         and sum(1 for w in words if w and w[0].isupper()) >= len(words) * 0.6
         and len(line) <= 80
-    ):
-        return True
-    return False
+    )
 
 
 # ---------------------------------------------------------------------------
 # PDF chunking
 # ---------------------------------------------------------------------------
+
 
 def chunk_pdf_pages(
     pages: list[PageContent],
@@ -114,8 +114,11 @@ def chunk_pdf_pages(
                 if len(candidate) >= min_chars:
                     chunks.extend(
                         _split_oversized(
-                            candidate, current_page_start, current_page_end,
-                            current_title, max_chars,
+                            candidate,
+                            current_page_start,
+                            current_page_end,
+                            current_title,
+                            max_chars,
                         )
                     )
                 # Start new chunk under this heading
@@ -134,8 +137,11 @@ def chunk_pdf_pages(
     if len(candidate) >= min_chars:
         chunks.extend(
             _split_oversized(
-                candidate, current_page_start, current_page_end,
-                current_title, max_chars,
+                candidate,
+                current_page_start,
+                current_page_end,
+                current_title,
+                max_chars,
             )
         )
 
@@ -146,6 +152,7 @@ def chunk_pdf_pages(
 # ---------------------------------------------------------------------------
 # Plain-text chunking
 # ---------------------------------------------------------------------------
+
 
 def chunk_text(
     text: str,
@@ -180,9 +187,7 @@ def chunk_text(
             # Flush current accumulation
             candidate = "\n\n".join(current_parts).strip()
             if len(candidate) >= min_chars:
-                chunks.extend(
-                    _split_oversized(candidate, None, None, current_title, max_chars)
-                )
+                chunks.extend(_split_oversized(candidate, None, None, current_title, max_chars))
             current_title = first_line
             rest = "\n".join(stripped.splitlines()[1:]).strip()
             current_parts = [rest] if rest else []
@@ -192,9 +197,7 @@ def chunk_text(
     # Flush final accumulation
     candidate = "\n\n".join(current_parts).strip()
     if len(candidate) >= min_chars:
-        chunks.extend(
-            _split_oversized(candidate, None, None, current_title, max_chars)
-        )
+        chunks.extend(_split_oversized(candidate, None, None, current_title, max_chars))
 
     # Fallback: treat whole text as one chunk if no paragraph boundaries found
     if not chunks and len(text.strip()) >= min_chars:
@@ -207,6 +210,7 @@ def chunk_text(
 # ---------------------------------------------------------------------------
 # Internal helpers
 # ---------------------------------------------------------------------------
+
 
 def _split_oversized(
     text: str,

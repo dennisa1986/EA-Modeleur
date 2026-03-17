@@ -7,7 +7,7 @@ from pydantic import BaseModel
 
 class ValidationFinding(BaseModel):
     rule_id: str
-    severity: str           # 'error' | 'warning'
+    severity: str  # 'error' | 'warning'
     element_id: str | None = None
     message: str
 

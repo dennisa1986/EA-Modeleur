@@ -110,6 +110,15 @@ class TestDocIdFromPath:
         (d2 / "report.pdf").write_bytes(content)
         assert doc_id_from_path(d1 / "report.pdf") == doc_id_from_path(d2 / "report.pdf")
 
+    def test_same_content_different_name_same_id(self, tmp_path: Path) -> None:
+        """Same content, different filenames → same doc_id (content-only fingerprint)."""
+        content = b"identical content bytes for fingerprinting" * 100
+        f1 = tmp_path / "report_v1.pdf"
+        f2 = tmp_path / "report_v2.pdf"
+        f1.write_bytes(content)
+        f2.write_bytes(content)
+        assert doc_id_from_path(f1) == doc_id_from_path(f2)
+
     def test_same_name_different_content_different_id(self, tmp_path: Path) -> None:
         """Same filename but different content → different doc_id."""
         d1 = tmp_path / "dir1"
@@ -157,9 +166,7 @@ class TestBuildSourceDocument:
     def test_extra_metadata_stored(self, tmp_path: Path) -> None:
         f = tmp_path / "doc.pdf"
         f.write_bytes(b"%PDF-1.4")
-        doc = build_source_document(
-            f, InputKind.PDF, extra_metadata={"title": "Test Framework"}
-        )
+        doc = build_source_document(f, InputKind.PDF, extra_metadata={"title": "Test Framework"})
         assert doc.metadata["title"] == "Test Framework"
 
     def test_file_size_recorded(self, tmp_path: Path) -> None:
@@ -240,7 +247,9 @@ class TestBuildCorpusChunk:
         chunk = build_corpus_chunk(raw, "doc-kw", str(f), InputKind.TEXT)
         assert len(chunk.detected_keywords) > 0
         # "components" or "architecture" should appear (most frequent)
-        assert any(kw in ("components", "architecture", "deployable") for kw in chunk.detected_keywords)
+        assert any(
+            kw in ("components", "architecture", "deployable") for kw in chunk.detected_keywords
+        )
 
     def test_source_type_preserved(self, tmp_path: Path) -> None:
         f = tmp_path / "source.pdf"

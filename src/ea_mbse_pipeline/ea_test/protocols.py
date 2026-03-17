@@ -12,8 +12,9 @@ from ea_mbse_pipeline.serialization.models import SerializedArtefact
 
 @runtime_checkable
 class EATesterProtocol(Protocol):
-    def test(self, artefact: SerializedArtefact, golden_path: Path | None = None) -> EATestReport:
-        ...
+    def test(
+        self, artefact: SerializedArtefact, golden_path: Path | None = None
+    ) -> EATestReport: ...
 
 
 class BaseEATester(ABC):

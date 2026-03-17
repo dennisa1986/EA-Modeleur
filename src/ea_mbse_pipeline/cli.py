@@ -8,8 +8,11 @@ import typer
 
 from ea_mbse_pipeline.shared.logging import configure_logging
 
-app      = typer.Typer(name="ea-mbse-pipeline", help="MBSE pipeline for Enterprise Architect 17.1.")
-ingest   = typer.Typer(name="ea-ingest",   help="Run the ingestion stage over corpus, metamodel, and screenshot directories.")
+app = typer.Typer(name="ea-mbse-pipeline", help="MBSE pipeline for Enterprise Architect 17.1.")
+ingest = typer.Typer(
+    name="ea-ingest",
+    help="Run the ingestion stage over corpus, metamodel, and screenshot directories.",
+)
 validate = typer.Typer(name="ea-validate", help="Run the validation stage only.")
 serialize = typer.Typer(name="ea-serialize", help="Run the serialization stage only.")
 
@@ -22,7 +25,7 @@ def _main(log_level: str = typer.Option("INFO", help="Logging level.")) -> None:
 @app.command("run")
 def run_pipeline(
     input_path: str = typer.Argument(..., help="Path to input file or directory."),
-    metamodel: str  = typer.Option("data/raw/metamodel/ea17_base.xmi", help="XMI metamodel path."),
+    metamodel: str = typer.Option("data/raw/metamodel/ea17_base.xmi", help="XMI metamodel path."),
     output_dir: str = typer.Option("outputs/", help="Output directory."),
 ) -> None:
     """Run the full MBSE pipeline on INPUT_PATH."""
@@ -31,11 +34,11 @@ def run_pipeline(
 
 @app.command("ingest")
 def run_ingest_app(
-    corpus_dir: str     = typer.Option("data/raw/corpus",      help="Corpus directory."),
-    metamodel_dir: str  = typer.Option("data/raw/metamodel",   help="XMI metamodel directory."),
+    corpus_dir: str = typer.Option("data/raw/corpus", help="Corpus directory."),
+    metamodel_dir: str = typer.Option("data/raw/metamodel", help="XMI metamodel directory."),
     screenshots_dir: str = typer.Option("data/raw/screenshots", help="Screenshots directory."),
-    output_dir: str     = typer.Option("data/processed/ingest", help="Output base directory."),
-    log_level: str      = typer.Option("INFO",                  help="Logging level."),
+    output_dir: str = typer.Option("data/processed/ingest", help="Output base directory."),
+    log_level: str = typer.Option("INFO", help="Logging level."),
 ) -> None:
     """Run the ingestion stage (also available as the ea-ingest command)."""
     _do_ingest(corpus_dir, metamodel_dir, screenshots_dir, output_dir, log_level)
@@ -57,14 +60,15 @@ def run_serialize(canonical_path: str = typer.Argument(...)) -> None:
 # ea-ingest standalone entry point
 # ---------------------------------------------------------------------------
 
+
 @ingest.callback(invoke_without_command=True)
 def run_ingest_cmd(
     ctx: typer.Context,
-    corpus_dir: str      = typer.Option("data/raw/corpus",       help="Corpus directory."),
-    metamodel_dir: str   = typer.Option("data/raw/metamodel",    help="XMI metamodel directory."),
-    screenshots_dir: str = typer.Option("data/raw/screenshots",  help="Screenshots directory."),
-    output_dir: str      = typer.Option("data/processed/ingest", help="Output base directory."),
-    log_level: str       = typer.Option("INFO",                  help="Logging level."),
+    corpus_dir: str = typer.Option("data/raw/corpus", help="Corpus directory."),
+    metamodel_dir: str = typer.Option("data/raw/metamodel", help="XMI metamodel directory."),
+    screenshots_dir: str = typer.Option("data/raw/screenshots", help="Screenshots directory."),
+    output_dir: str = typer.Option("data/processed/ingest", help="Output base directory."),
+    log_level: str = typer.Option("INFO", help="Logging level."),
 ) -> None:
     """Run the ingestion stage over corpus, metamodel, and screenshot directories.
 

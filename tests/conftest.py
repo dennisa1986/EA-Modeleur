@@ -11,7 +11,7 @@ from ea_mbse_pipeline.metamodel.models import RuleSet
 from ea_mbse_pipeline.shared.provenance import Provenance, SourceRef
 
 DATA_FIXTURES = Path(__file__).parent.parent / "data" / "fixtures"
-DATA_GOLDEN   = Path(__file__).parent.parent / "data" / "golden"
+DATA_GOLDEN = Path(__file__).parent.parent / "data" / "golden"
 
 
 def _test_provenance(file: str = "test.txt") -> Provenance:

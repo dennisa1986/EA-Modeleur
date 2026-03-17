@@ -116,7 +116,7 @@ class TestChunkText:
 
     def test_oversized_chunk_is_split(self) -> None:
         # A very long text should be split into multiple chunks
-        long_text = ("Architecture components represent deployable units. " * 100)
+        long_text = "Architecture components represent deployable units. " * 100
         chunks = chunk_text(long_text, max_chars=200)
         assert len(chunks) > 1
 

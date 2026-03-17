@@ -109,20 +109,21 @@ pipeline = IngestPipeline(
 `doc_id_from_path(path)` produces a stable `"doc-<16 hex>"` identifier for
 each source file.
 
-**Strategy (Sprint 2a):** `SHA-256(<filename_bytes> + b":" + <first 64 KiB of
-content>)`, truncated to 16 hex characters.
+**Strategy (Sprint 2a, rev 2):** `SHA-256(<first 64 KiB of content>)`,
+truncated to 16 hex characters.  The filename and directory are **not** part
+of the hash.
 
-- **Collision-resistant:** same name + different content → different ID; same
-  content + different name → different ID.
-- **Stable:** re-ingesting the same file always produces the same `doc_id`,
-  enabling idempotent upserts in SQLite.
+- **Content-based:** identical content produces the same `doc_id` regardless
+  of filename or directory location.  This enables deduplication when the same
+  document is copied or moved within the corpus.
+- **Stable:** re-ingesting the same unchanged file always produces the same
+  `doc_id`, enabling idempotent upserts in SQLite.
 - **Fast:** reads at most 64 KiB regardless of file size.
 - **Fallback:** if the file is unreadable (e.g. missing), degrades to
   `SHA-256(<filename>:<stat.st_size>)` and logs a debug message.
 
-Note: two files with identical names *and* identical first 64 KiB are
-considered the same document and receive the same `doc_id`.  This is an
-intentional design choice — same content is the same source.
+Tradeoff: two files that differ only *after* the first 64 KiB will share a
+`doc_id`.  In practice this does not arise with real corpus documents.
 
 ## Limitations of this implementation
 

@@ -20,15 +20,14 @@ from ea_mbse_pipeline.shared.logging import get_logger
 logger = get_logger(__name__)
 
 try:
-    from PIL import Image as _PilImage  # type: ignore[import-untyped]
+    from PIL import Image as _PilImage
+
     _PIL_AVAILABLE = True
 except ImportError:  # pragma: no cover
     _PIL_AVAILABLE = False
 
 
-def build_image_manifest(
-    screenshots_dir: Path, *, recursive: bool = True
-) -> list[ImageAsset]:
+def build_image_manifest(screenshots_dir: Path, *, recursive: bool = True) -> list[ImageAsset]:
     """Discover all images in *screenshots_dir* and return an ImageAsset list.
 
     Uses Pillow to read image dimensions and format when available.
@@ -77,7 +76,8 @@ def _make_asset(path: Path) -> ImageAsset:
         except Exception as exc:  # noqa: BLE001
             logger.warning(
                 "Cannot read image metadata for '%s': %s",
-                path.name, exc,
+                path.name,
+                exc,
             )
 
     return ImageAsset(

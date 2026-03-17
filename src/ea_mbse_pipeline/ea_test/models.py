@@ -9,7 +9,7 @@ class EATestIssue(BaseModel):
     xpath: str | None = None
     """XPath within the serialised XMI where the issue was found."""
     message: str
-    severity: str = "error"   # 'error' | 'warning'
+    severity: str = "error"  # 'error' | 'warning'
 
 
 class EATestReport(BaseModel):
