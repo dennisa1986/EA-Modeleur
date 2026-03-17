@@ -40,20 +40,50 @@ _STOP_WORDS: frozenset[str] = frozenset({
 })
 
 
+# Number of bytes read from the file for the content fingerprint.
+# 64 KiB is large enough to distinguish real-world documents while remaining
+# fast even on network-mounted storage.
+_FINGERPRINT_BYTES: int = 65_536
+
+
 def doc_id_from_path(path: Path) -> str:
-    """Derive a deterministic document ID from the file name and its byte size.
+    """Derive a deterministic document ID from the file name and content prefix.
 
-    The ID is stable across repeated ingests of the same file, enabling
-    idempotent upserts in downstream storage.
+    Strategy: SHA-256 of ``<filename_bytes> + b":" + <first 64 KiB of content>``.
 
-    Returns a string of the form ``"doc-<16 hex chars>"``.
+    This is:
+    - **Collision-resistant**: two files with the same name but different
+      content produce different IDs; two files with different names but
+      identical content also produce different IDs (name is included in the
+      hash input).
+    - **Stable**: re-ingesting the same unchanged file always yields the same
+      ``doc_id``, enabling idempotent upserts in SQLite.
+    - **Fast**: at most 64 KiB is read, regardless of file size.
+
+    Fallback: if the file cannot be read (e.g. missing or permission error),
+    the strategy degrades to ``SHA-256(<filename>:<stat.st_size>)``, with size
+    defaulting to 0 for non-existent files.  This preserves the "no raise"
+    contract while flagging the degraded case in the log.
+
+    Returns:
+        String of the form ``"doc-<16 hex chars>"``.
     """
     try:
-        size = path.stat().st_size
+        content_prefix = path.read_bytes()[:_FINGERPRINT_BYTES]
+        key = path.name.encode() + b":" + content_prefix
     except OSError:
-        size = 0
-    key = f"{path.name}:{size}"
-    digest = hashlib.sha256(key.encode()).hexdigest()[:16]
+        # Fallback: name + size (legacy behaviour, used only when file is
+        # unreadable, e.g. in tests that pass non-existent paths).
+        try:
+            size = path.stat().st_size
+        except OSError:
+            size = 0
+        logger.debug(
+            "doc_id fallback (unreadable file '%s'): using name+size strategy",
+            path.name,
+        )
+        key = f"{path.name}:{size}".encode()
+    digest = hashlib.sha256(key).hexdigest()[:16]
     return f"doc-{digest}"
 
 

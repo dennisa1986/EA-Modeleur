@@ -17,7 +17,8 @@ The skill ingests the entire corpus directory, so just place the file and run.
 
 ### 1. Place the document
 
-Copy the source file to `data/raw/corpus/<name>.<ext>`.
+Copy the source file to `data/raw/corpus/<name>.<ext>`.  Subdirectories are
+supported — files are discovered recursively by default.
 
 Supported types: `.pdf`, `.txt`, `.md`, `.rst`
 

@@ -26,7 +26,9 @@ except ImportError:  # pragma: no cover
     _PIL_AVAILABLE = False
 
 
-def build_image_manifest(screenshots_dir: Path) -> list[ImageAsset]:
+def build_image_manifest(
+    screenshots_dir: Path, *, recursive: bool = True
+) -> list[ImageAsset]:
     """Discover all images in *screenshots_dir* and return an ImageAsset list.
 
     Uses Pillow to read image dimensions and format when available.
@@ -35,11 +37,13 @@ def build_image_manifest(screenshots_dir: Path) -> list[ImageAsset]:
 
     Args:
         screenshots_dir: Directory containing screenshot/image files.
+        recursive:       If ``True`` (default), subdirectories are scanned
+                         recursively.
 
     Returns:
         List of ImageAsset instances, one per discovered image file.
     """
-    image_paths = discover_screenshot_files(screenshots_dir)
+    image_paths = discover_screenshot_files(screenshots_dir, recursive=recursive)
     assets: list[ImageAsset] = []
     for path in image_paths:
         asset = _make_asset(path)

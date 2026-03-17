@@ -30,7 +30,9 @@ data/processed/ingest/{run_id}/
 
 ### 1. Place source documents
 
-Copy documents to `data/raw/corpus/<name>.<ext>`.
+Copy documents to `data/raw/corpus/<name>.<ext>`.  Subdirectories are
+supported — discovery is recursive by default, so
+`data/raw/corpus/domain1/doc.pdf` is picked up automatically.
 
 ### 2. Run the ingest stage
 
