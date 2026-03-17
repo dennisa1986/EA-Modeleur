@@ -1,6 +1,7 @@
 """Unit tests for MetamodelCompiler.
 
 Filesystem reads are limited to committed fixture files.
+Sprint 3.1: protocol conformance tests added.
 """
 
 from __future__ import annotations
@@ -11,6 +12,7 @@ import pytest
 
 from ea_mbse_pipeline.metamodel.compiler import MetamodelCompiler
 from ea_mbse_pipeline.metamodel.models import RuleKind, RuleSet
+from ea_mbse_pipeline.metamodel.protocols import MetamodelCompilerProtocol
 from ea_mbse_pipeline.shared.errors import ErrorCode, PipelineError
 
 _FIXTURES = Path("data/fixtures/metamodel")
@@ -138,3 +140,40 @@ class TestMetamodelCompilerErrors:
         ids1 = sorted(r.id for r in rs1.rules)
         ids2 = sorted(r.id for r in rs2.rules)
         assert ids1 == ids2
+
+
+@pytest.mark.unit
+class TestMetamodelCompilerProtocolConformance:
+    """MetamodelCompiler must satisfy MetamodelCompilerProtocol (Sprint 3.1)."""
+
+    def test_isinstance_check(self) -> None:
+        compiler = MetamodelCompiler()
+        assert isinstance(compiler, MetamodelCompilerProtocol)
+
+    def test_has_compile_method(self) -> None:
+        assert callable(getattr(MetamodelCompiler, "compile", None))
+
+    def test_has_compile_full_method(self) -> None:
+        assert callable(getattr(MetamodelCompiler, "compile_full", None))
+
+    def test_has_compile_and_export_method(self) -> None:
+        assert callable(getattr(MetamodelCompiler, "compile_and_export", None))
+
+    def test_compile_full_accepts_description_path(self) -> None:
+        """compile_full with description_path=None must succeed (no default-only trap)."""
+        compiler = MetamodelCompiler()
+        rule_set = compiler.compile_full(
+            _FIXTURES / "mini_valid.xmi",
+            description_path=None,
+        )
+        assert isinstance(rule_set, RuleSet)
+
+    def test_compile_full_with_description_satisfies_protocol(self) -> None:
+        compiler = MetamodelCompiler()
+        rule_set = compiler.compile_full(
+            _FIXTURES / "mini_valid.xmi",
+            description_path=_FIXTURES / "description_explicit.txt",
+        )
+        # Explicit rules from fixture must appear in the registry
+        assert rule_set.rule_count > 0
+        assert len(rule_set.description_sources) == 1

@@ -5,8 +5,25 @@ extracts additional constraints that cannot be encoded in XMI alone.
 Extracted constraints are later merged into the rule registry by the
 compiler.
 
-Classification is best-effort: a human reviewer should check inferred
-rule kinds after compilation.
+Two extraction modes are supported:
+
+1. **Heuristic mode** (Sprint 3) — lines containing MUST, SHALL, MUST NOT,
+   SHALL NOT, FORBIDDEN, or PROHIBITED are treated as constraint statements.
+   Kind and severity are inferred from keywords.  Classification is best-effort.
+
+2. **Explicit mode** (Sprint 3.1) — lines matching the machine-friendly
+   ``RULE[...]`` directive are parsed with exact metadata, bypassing
+   heuristics entirely.  Format::
+
+       RULE[kind=<kind>,severity=<severity>]: <constraint text>
+
+   Both ``kind`` and ``severity`` are optional; omitted values default to
+   ``general`` and ``error`` respectively.  Valid kind values: ``connector``,
+   ``naming``, ``tagged_value``, ``package_placement``, ``forbidden``,
+   ``general``.
+
+   Explicit rules take priority: if a line starts with ``RULE[``, heuristic
+   matching is skipped for that line.
 """
 
 from __future__ import annotations
@@ -20,12 +37,26 @@ from ea_mbse_pipeline.shared.errors import ErrorCode, PipelineError
 
 logger = logging.getLogger(__name__)
 
-# Patterns that signal a normative constraint statement
+# Patterns that signal a normative constraint statement (heuristic mode)
 _RE_MUST = re.compile(r"\bMUST\b", re.IGNORECASE)
 _RE_SHALL = re.compile(r"\bSHALL\b", re.IGNORECASE)
 _RE_FORBIDDEN = re.compile(
     r"\b(?:MUST NOT|SHALL NOT|FORBIDDEN|PROHIBITED|MAY NOT)\b", re.IGNORECASE
 )
+
+# Machine-friendly explicit rule directive (explicit mode)
+# Matches: RULE[kind=foo,severity=bar]: <text>
+# Both key=value pairs are optional; attrs group may be empty.
+_RE_EXPLICIT_RULE = re.compile(
+    r"^RULE\[(?P<attrs>[^\]]*)\]:\s*(?P<text>.+)",
+    re.IGNORECASE,
+)
+
+# Accepted kind values for explicit rules
+_VALID_EXPLICIT_KINDS = frozenset(
+    {"connector", "naming", "tagged_value", "package_placement", "forbidden", "general"}
+)
+_VALID_EXPLICIT_SEVERITIES = frozenset({"error", "warning"})
 
 
 # ---------------------------------------------------------------------------
@@ -45,6 +76,8 @@ class DescriptionConstraint:
     severity: str = "error"
     source_line: int = 0
     section: str = ""
+    is_explicit: bool = False
+    """True when extracted from a ``RULE[...]`` directive; False for heuristic."""
 
 
 @dataclass
@@ -65,9 +98,13 @@ class DescriptionParseResult:
 class DescriptionParser:
     """Parses plain-text / Markdown description files for metamodel constraints.
 
-    Only lines that contain MUST, SHALL, MUST NOT, SHALL NOT, FORBIDDEN, or
-    PROHIBITED are treated as constraint statements.  All other lines are
-    silently skipped.
+    Extraction order per non-blank, non-heading line:
+
+    1. If the line matches ``RULE[...]:`` → explicit extraction (kind/severity
+       read directly from the directive).
+    2. Else if the line contains MUST / SHALL / FORBIDDEN → heuristic extraction
+       (kind and severity inferred from keywords).
+    3. Otherwise the line is silently skipped.
     """
 
     def parse(self, description_path: Path) -> DescriptionParseResult:
@@ -96,8 +133,10 @@ class DescriptionParser:
         result = DescriptionParseResult(source_path=str(description_path))
         self._parse_text(text, result)
         logger.info(
-            "Description parse complete: %d constraints extracted",
+            "Description parse complete: %d constraints extracted (%d explicit, %d heuristic)",
             len(result.constraints),
+            sum(1 for c in result.constraints if c.is_explicit),
+            sum(1 for c in result.constraints if not c.is_explicit),
         )
         return result
 
@@ -122,6 +161,23 @@ class DescriptionParser:
             # Strip leading bullet/list markers
             cleaned = re.sub(r"^[-*+]\s+", "", stripped)
 
+            # --- Explicit RULE[...] directive takes priority ---
+            explicit = self._try_explicit_rule(cleaned, result)
+            if explicit is not None:
+                text_body, kind, severity = explicit
+                result.constraints.append(
+                    DescriptionConstraint(
+                        raw_text=text_body,
+                        inferred_kind=kind,
+                        severity=severity,
+                        source_line=lineno,
+                        section=current_section,
+                        is_explicit=True,
+                    )
+                )
+                continue
+
+            # --- Heuristic fallback: MUST / SHALL / FORBIDDEN ---
             if not self._is_constraint_line(cleaned):
                 continue
 
@@ -134,8 +190,55 @@ class DescriptionParser:
                     severity=severity,
                     source_line=lineno,
                     section=current_section,
+                    is_explicit=False,
                 )
             )
+
+    @staticmethod
+    def _try_explicit_rule(
+        line: str,
+        result: DescriptionParseResult,
+    ) -> tuple[str, str, str] | None:
+        """Try to parse a ``RULE[attrs]: text`` directive.
+
+        Returns ``(constraint_text, kind, severity)`` on success, ``None`` if
+        the line does not match the directive format.
+
+        Unrecognised kind or severity values are replaced with their defaults
+        and a warning is recorded in *result*.
+        """
+        m = _RE_EXPLICIT_RULE.match(line)
+        if not m:
+            return None
+
+        attrs_str = m.group("attrs")
+        text_body = m.group("text").strip()
+        kind = "general"
+        severity = "error"
+
+        for part in attrs_str.split(","):
+            part = part.strip()
+            if "=" not in part:
+                continue
+            key, _, val = part.partition("=")
+            key = key.strip().lower()
+            val = val.strip().lower()
+            if key == "kind":
+                if val in _VALID_EXPLICIT_KINDS:
+                    kind = val
+                else:
+                    result.warnings.append(
+                        f"Unknown kind '{val}' in RULE directive; defaulting to 'general'."
+                    )
+            elif key == "severity":
+                if val in _VALID_EXPLICIT_SEVERITIES:
+                    severity = val
+                else:
+                    result.warnings.append(
+                        f"Unknown severity '{val}' in RULE directive; defaulting to 'error'."
+                    )
+
+        return text_body, kind, severity
 
     @staticmethod
     def _is_constraint_line(line: str) -> bool:

@@ -1,0 +1,14 @@
+# Explicit Rule Directives
+
+RULE[kind=connector,severity=error]: Association connectors must have both a source and a target element defined.
+RULE[kind=naming,severity=warning]: Element names should follow PascalCase convention.
+RULE[kind=tagged_value,severity=error]: All Components must carry the 'version' tagged value.
+RULE[kind=forbidden,severity=error]: Self-referencing connectors between the same element are not permitted.
+RULE[kind=package_placement]: Security elements must be placed in the Security package.
+RULE[]: All model elements must have a non-empty description.
+
+# Mixed with Heuristic
+
+Element names MUST start with an uppercase letter.
+Connectors SHALL have a defined type.
+Circular dependencies are FORBIDDEN between root packages.

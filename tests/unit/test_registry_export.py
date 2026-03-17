@@ -2,12 +2,14 @@
 
 Content-building tests (build_markdown, model_dump) run without filesystem I/O.
 File-writing tests are marked @pytest.mark.integration and use tmp_path.
+Sprint 3.1: error-handling coverage added.
 """
 
 from __future__ import annotations
 
 import json
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 
@@ -173,3 +175,42 @@ class TestRegistryExporterFileIO:
         with pytest.raises(PipelineError) as exc_info:
             exporter.export_json(rule_set, bad_path)
         assert exc_info.value.code == ErrorCode.METAMODEL_REGISTRY_EXPORT_FAIL
+
+
+@pytest.mark.unit
+class TestRegistryExporterErrorHandling:
+    """Sprint 3.1: export errors must always surface as PipelineError(META-004)."""
+
+    def test_build_markdown_exception_wrapped_as_meta004(self, tmp_path: Path) -> None:
+        """If build_markdown raises, export_markdown must raise PipelineError(META-004)."""
+        exporter = RegistryExporter()
+        rule_set = _make_rule_set()
+        with patch.object(exporter, "build_markdown", side_effect=AttributeError("bad attr")):
+            with pytest.raises(PipelineError) as exc_info:
+                exporter.export_markdown(rule_set, tmp_path / "out.md")
+        assert exc_info.value.code == ErrorCode.METAMODEL_REGISTRY_EXPORT_FAIL
+
+    def test_json_serialization_exception_wrapped_as_meta004(self, tmp_path: Path) -> None:
+        """If json.dumps raises, export_json must raise PipelineError(META-004)."""
+        exporter = RegistryExporter()
+        rule_set = _make_rule_set()
+        with patch("ea_mbse_pipeline.metamodel.registry_export.json.dumps", side_effect=ValueError("serialize fail")):
+            with pytest.raises(PipelineError) as exc_info:
+                exporter.export_json(rule_set, tmp_path / "out.json")
+        assert exc_info.value.code == ErrorCode.METAMODEL_REGISTRY_EXPORT_FAIL
+
+    def test_pipeline_error_from_export_json_has_path_context(self, tmp_path: Path) -> None:
+        exporter = RegistryExporter()
+        rule_set = _make_rule_set()
+        bad_path = tmp_path  # directory, not a file
+        with pytest.raises(PipelineError) as exc_info:
+            exporter.export_json(rule_set, bad_path)
+        assert "path" in exc_info.value.context
+
+    def test_pipeline_error_from_export_markdown_has_path_context(self, tmp_path: Path) -> None:
+        exporter = RegistryExporter()
+        rule_set = _make_rule_set()
+        with patch.object(exporter, "build_markdown", side_effect=RuntimeError("fail")):
+            with pytest.raises(PipelineError) as exc_info:
+                exporter.export_markdown(rule_set, tmp_path / "out.md")
+        assert "path" in exc_info.value.context

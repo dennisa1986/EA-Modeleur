@@ -1,6 +1,6 @@
 # Metamodel Compiler — Architecture
 
-Sprint 3 delivery.
+Sprint 3 delivery. Sprint 3.1 hardening: explicit rule directives, full protocol contract, tightened error handling.
 
 ---
 
@@ -159,11 +159,105 @@ than the raw constraint string alone.
 
 ---
 
-## Limitations and extension points (Sprint 3 first iteration)
+---
+
+## Description parser — extraction modes
+
+The `DescriptionParser` supports two extraction modes that are applied in
+priority order for every non-blank, non-heading line:
+
+### 1. Explicit `RULE[...]` directive (machine-friendly)
+
+Lines that begin with `RULE[<attrs>]:` are parsed with exact metadata.  No
+keyword heuristics are applied.  Format:
+
+```
+RULE[kind=<kind>,severity=<severity>]: <constraint text>
+```
+
+Both `kind` and `severity` are optional; omitted values default to `general`
+and `error` respectively.
+
+Valid `kind` values: `connector` | `naming` | `tagged_value` |
+`package_placement` | `forbidden` | `general`
+
+Valid `severity` values: `error` | `warning`
+
+Examples:
+
+```
+RULE[kind=connector,severity=error]: Association must have both source and target.
+RULE[kind=naming,severity=warning]: Element names should use PascalCase.
+RULE[kind=forbidden,severity=error]: Self-referencing connectors are prohibited.
+RULE[]: All model elements must carry a non-empty description.
+```
+
+Explicit rules set `DescriptionConstraint.is_explicit = True`.  Unknown kind
+or severity values are replaced with defaults and a warning is recorded in
+`DescriptionParseResult.warnings`.
+
+### 2. Keyword heuristic (MUST / SHALL / FORBIDDEN)
+
+Lines containing MUST, SHALL, MUST NOT, SHALL NOT, FORBIDDEN, PROHIBITED, or
+MAY NOT are extracted as constraint statements.  Kind and severity are inferred
+from the surrounding words:
+
+| Signal | severity | kind (default heuristic) |
+|---|---|---|
+| MUST / SHALL | `error` | inferred from keywords |
+| MUST NOT / SHALL NOT / FORBIDDEN / PROHIBITED / MAY NOT | `error` | `forbidden` |
+| Named-value keywords (`tagged value`, ` tag `) | `error` | `tagged_value` |
+| Naming keywords (`naming`, `name pattern`, case-change words) | `error` | `naming` |
+| Package keywords (`package`, `placed in`, `reside in`) | `error` | `package_placement` |
+| Relationship keywords (`connector`, `association`, `dependency`) | `error` | `connector` |
+
+Classification is best-effort; a reviewer should validate inferred kinds after
+compilation.  Use explicit `RULE[...]` directives for production rules where
+precision matters.
+
+---
+
+## Error handling
+
+All export failures must surface as `PipelineError` with the appropriate error
+code.  No raw exceptions escape the export methods.
+
+| ErrorCode | Trigger |
+|---|---|
+| `META-001` (`METAMODEL_PARSE_ERROR`) | XMI file missing or XML syntax error |
+| `META-004` (`METAMODEL_REGISTRY_EXPORT_FAIL`) | Any failure during JSON or Markdown export, including serialization (`model_dump`, `build_markdown`) and file I/O |
+| `META-005` (`METAMODEL_DESCRIPTION_PARSE_ERROR`) | Description file missing or unreadable |
+
+The `export_json` and `export_markdown` methods catch `Exception` (not just
+`OSError`) so that serialization failures in `model_dump()` and rendering
+failures in `build_markdown()` are also wrapped rather than escaping as
+unstructured exceptions.  `PipelineError` instances that propagate from nested
+calls are re-raised as-is (they carry structured error codes already).
+
+---
+
+## Protocol contract
+
+`MetamodelCompilerProtocol` (structural) and `BaseMetamodelCompiler` (ABC) both
+declare the full public API:
+
+| Method | Signature | Purpose |
+|---|---|---|
+| `compile` | `(xmi_path) → RuleSet` | XMI-only convenience entry point |
+| `compile_full` | `(xmi_path, description_path=None) → RuleSet` | XMI + optional description |
+| `compile_and_export` | `(xmi_path, description_path=None, output_dir=None) → tuple[RuleSet, Path, Path]` | Compile and write JSON + Markdown |
+
+Use `isinstance(compiler, MetamodelCompilerProtocol)` to verify structural
+conformance at runtime.
+
+---
+
+## Limitations and extension points
 
 | Area | Current state | Extension path |
 |---|---|---|
-| Description parser classification | Best-effort keyword matching | Replace with a proper NLP classifier or structured rule format |
+| Description parser — heuristic | Best-effort keyword matching | Use explicit `RULE[...]` directives for precision |
+| Description parser — explicit format | kind/severity only | Add `constraint=`, `applies_to=` fields to `RULE[...]` |
 | Connector source/target resolution | Resolves by xmi:idref; may miss indirect references | Add a two-pass resolver that follows all idref chains |
 | Diagram rules | Model defined; no XMI extraction yet | Implement when EA XMI diagram export format is confirmed |
 | Package placement extraction | Extracted from Package elements; nesting depth not tracked | Add parent-tracking in `_parse_packages` |

@@ -30,15 +30,15 @@ class RegistryExporter:
         Raises:
             PipelineError(META-004): if the file cannot be written.
         """
-        output_path.parent.mkdir(parents=True, exist_ok=True)
         logger.info("Exporting registry JSON to %s", output_path)
         try:
+            output_path.parent.mkdir(parents=True, exist_ok=True)
             payload = rule_set.model_dump(mode="json")
             output_path.write_text(
                 json.dumps(payload, indent=2, ensure_ascii=False),
                 encoding="utf-8",
             )
-        except OSError as exc:
+        except Exception as exc:
             raise PipelineError(
                 ErrorCode.METAMODEL_REGISTRY_EXPORT_FAIL,
                 f"Cannot write registry JSON to {output_path}: {exc}",
@@ -57,12 +57,12 @@ class RegistryExporter:
         Raises:
             PipelineError(META-004): if the file cannot be written.
         """
-        output_path.parent.mkdir(parents=True, exist_ok=True)
         logger.info("Exporting registry Markdown to %s", output_path)
-        md = self.build_markdown(rule_set)
         try:
+            output_path.parent.mkdir(parents=True, exist_ok=True)
+            md = self.build_markdown(rule_set)
             output_path.write_text(md, encoding="utf-8")
-        except OSError as exc:
+        except Exception as exc:
             raise PipelineError(
                 ErrorCode.METAMODEL_REGISTRY_EXPORT_FAIL,
                 f"Cannot write Markdown report to {output_path}: {exc}",
