@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xmi:XMI
+    xmi:version="2.1"
+    xmlns:xmi="http://www.omg.org/XMI"
+    xmlns:uml="http://www.eclipse.org/uml2/5.0.0/UML"
+    xmlns:ecore="http://www.eclipse.org/emf/2002/Ecore">
+
+  <uml:Model
+      xmi:id="{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}"
+      name="EA_Model">
+
+    <!-- Root architecture package -->
+    <packagedElement
+        xmi:type="uml:Package"
+        xmi:id="{B2C3D4E5-F6A7-8901-BCDE-F12345678901}"
+        name="Architecture">
+
+      <!-- Component stereotype -->
+      <packagedElement
+          xmi:type="uml:Class"
+          xmi:id="{C3D4E5F6-A7B8-9012-CDEF-123456789012}"
+          name="Component">
+        <ownedAttribute
+            xmi:type="uml:Property"
+            xmi:id="{D4E5F6A7-B8C9-0123-DEF0-234567890123}"
+            name="componentId"
+            visibility="public"/>
+      </packagedElement>
+
+      <!-- Interface stereotype -->
+      <packagedElement
+          xmi:type="uml:Interface"
+          xmi:id="{E5F6A7B8-C9D0-1234-EF01-345678901234}"
+          name="ProvidedInterface"/>
+
+    </packagedElement>
+
+  </uml:Model>
+
+  <xmi:Extension extender="Enterprise Architect">
+    <elements>
+      <element
+          xmi:id="{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}"
+          xmi:type="uml:Model"
+          name="EA_Model"
+          scope="public"/>
+    </elements>
+  </xmi:Extension>
+
+</xmi:XMI>
