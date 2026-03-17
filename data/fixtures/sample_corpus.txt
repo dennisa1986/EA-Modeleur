@@ -1,0 +1,82 @@
+Architecture Framework Reference
+
+1. Introduction
+
+This document describes the enterprise architecture framework used for modelling
+complex systems. It provides guidance on decomposing systems into components,
+interfaces, and relationships, and defines how these elements should be
+represented in Enterprise Architect.
+
+1.1 Scope and Applicability
+
+The framework applies to all architecture projects within the organisation.
+It is normative for Enterprise Architect models and informative for other
+modelling tools.
+
+2. Components
+
+Components represent deployable units of software or infrastructure.
+Each component must have a unique identifier, a defined interface, and
+clear dependencies on other components declared explicitly.
+
+2.1 Application Components
+
+Application components represent software executing on infrastructure.
+Examples include microservices, backend APIs, and front-end applications.
+Each application component must expose at least one provided interface.
+
+2.2 Infrastructure Components
+
+Infrastructure components represent physical or virtual hardware, including
+servers, containers, networks, and storage systems. Infrastructure components
+support application components but do not implement business logic directly.
+
+2.3 Service Components
+
+Service components represent shared business capabilities accessible through
+well-defined interfaces. A service component may aggregate multiple application
+components and expose them as a single logical unit.
+
+3. Interfaces
+
+Interfaces define the contract between components. They specify operations
+(methods), data flows, and communication protocols. Every component must
+declare both its required and provided interfaces.
+
+3.1 Interface Types
+
+The framework recognises three types of interfaces:
+
+Synchronous interfaces use request-response patterns (REST, gRPC, SOAP).
+Asynchronous interfaces use message-based patterns (event streams, queues).
+Batch interfaces transfer large data sets through files or bulk database operations.
+
+4. Relationships
+
+Relationships connect components, interfaces, and other model elements.
+The framework defines the following relationship types:
+
+Realization: a component implements an interface contract.
+Dependency: a component requires another component or interface.
+Association: a loose, navigable connection between model elements.
+Composition: an element is structurally part of another element.
+
+5. Diagrams
+
+Architecture diagrams visualise component relationships and system topology.
+The framework supports the following diagram types:
+
+Component diagrams show the static structure of deployable units.
+Sequence diagrams show runtime interactions between components.
+Class diagrams show data structures and their relationships.
+Deployment diagrams show the mapping of software onto infrastructure.
+
+6. Governance
+
+All architecture models must be reviewed by the Architecture Board before
+being promoted to the official baseline. Reviews must verify that:
+
+- All elements have a valid stereotype from the approved metamodel.
+- All interfaces are documented with at least one example operation.
+- All dependencies are justified with a written rationale.
+- No orphaned elements exist without relationships.
