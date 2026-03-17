@@ -200,6 +200,9 @@ class IngestPipeline:
         metamodel_dir:   Directory containing XMI metamodel files.
         screenshots_dir: Directory containing screenshot image files (optional).
         output_dir:      Base output directory; a sub-directory per run_id is created.
+        recursive:       If ``True`` (default), all three source directories are
+                         scanned recursively.  Set to ``False`` to limit discovery
+                         to the top-level directory only.
 
     Example::
 
@@ -218,11 +221,14 @@ class IngestPipeline:
         metamodel_dir: Path,
         screenshots_dir: Path,
         output_dir: Path,
+        *,
+        recursive: bool = True,
     ) -> None:
         self._corpus_dir = corpus_dir
         self._metamodel_dir = metamodel_dir
         self._screenshots_dir = screenshots_dir
         self._output_dir = output_dir
+        self._recursive = recursive
 
     def run(self) -> IngestRunManifest:
         """Execute the full ingest stage and return the run manifest.
@@ -250,12 +256,16 @@ class IngestPipeline:
         )
 
         # 1. Metamodel discovery (XMI files listed for MetamodelCompiler, not ingested)
-        xmi_files = discover_metamodel_files(self._metamodel_dir)
+        xmi_files = discover_metamodel_files(
+            self._metamodel_dir, recursive=self._recursive
+        )
         manifest.xmi_files = [str(f) for f in xmi_files]
         logger.info("Metamodel files: %d", len(xmi_files))
 
         # 2. Corpus ingestion
-        corpus_files = discover_corpus_files(self._corpus_dir)
+        corpus_files = discover_corpus_files(
+            self._corpus_dir, recursive=self._recursive
+        )
         for file_path in corpus_files:
             try:
                 doc, chunks = self._ingest_corpus_file(file_path)
@@ -277,7 +287,9 @@ class IngestPipeline:
 
         # 3. Screenshot manifest (ensure directory exists even if empty)
         ensure_directory(self._screenshots_dir)
-        image_assets = build_image_manifest(self._screenshots_dir)
+        image_assets = build_image_manifest(
+            self._screenshots_dir, recursive=self._recursive
+        )
         manifest.image_assets.extend(image_assets)
 
         manifest.finished_at = datetime.now(timezone.utc)

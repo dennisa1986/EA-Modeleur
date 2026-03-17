@@ -87,6 +87,43 @@ stages never need to guess the origin of a text excerpt.
    at paragraph, sentence, or hard-character boundaries.
 5. **Minimum size** — candidates shorter than `_MIN_CHUNK_CHARS` (80) are discarded.
 
+## File discovery
+
+All three source directories are scanned by `file_discovery.py`.  Discovery is
+**recursive by default** (`recursive=True`): files in subdirectories are
+included and the result is sorted by full path for deterministic ordering.
+
+Set `recursive=False` on `IngestPipeline` to limit discovery to the top-level
+directory only:
+
+```python
+pipeline = IngestPipeline(
+    corpus_dir=Path("data/raw/corpus"),
+    ...
+    recursive=False,
+)
+```
+
+## Document ID strategy
+
+`doc_id_from_path(path)` produces a stable `"doc-<16 hex>"` identifier for
+each source file.
+
+**Strategy (Sprint 2a):** `SHA-256(<filename_bytes> + b":" + <first 64 KiB of
+content>)`, truncated to 16 hex characters.
+
+- **Collision-resistant:** same name + different content → different ID; same
+  content + different name → different ID.
+- **Stable:** re-ingesting the same file always produces the same `doc_id`,
+  enabling idempotent upserts in SQLite.
+- **Fast:** reads at most 64 KiB regardless of file size.
+- **Fallback:** if the file is unreadable (e.g. missing), degrades to
+  `SHA-256(<filename>:<stat.st_size>)` and logs a debug message.
+
+Note: two files with identical names *and* identical first 64 KiB are
+considered the same document and receive the same `doc_id`.  This is an
+intentional design choice — same content is the same source.
+
 ## Limitations of this implementation
 
 - **No OCR** — image-only PDFs (scanned documents) yield `INGEST_EMPTY_CONTENT`.
@@ -100,6 +137,9 @@ stages never need to guess the origin of a text excerpt.
   reuses the same deterministic `doc_id`, enabling upsert semantics in SQLite.
 - **Screenshots not OCR-d** — `ImageAsset` records are manifested but text is
   not extracted.  Screenshots are supporting input only (data-governance.md).
+- **64 KiB fingerprint boundary** — two files with the same name and identical
+  first 64 KiB but different content beyond that will share a `doc_id`.  In
+  practice this does not arise with real documents.
 
 ## Extension points
 

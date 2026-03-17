@@ -182,6 +182,75 @@ class TestIngestPipelineRun:
         m2 = pipeline.run()
         assert m1.run_id != m2.run_id
 
+    def test_subdirectory_files_discovered_recursive(self, tmp_path: Path) -> None:
+        """Files placed in corpus subdirectories are discovered and ingested."""
+        corpus = tmp_path / "corpus"
+        subdir = corpus / "domain_docs"
+        subdir.mkdir(parents=True)
+        (corpus / "top_level.txt").write_text(
+            "Top-level corpus document with sufficient content.\n\n"
+            "Second paragraph ensures at least one chunk is produced here."
+        )
+        (subdir / "nested.txt").write_text(
+            "Nested document from a subdirectory.\n\n"
+            "Another paragraph for the nested subdirectory document here."
+        )
+        pipeline = IngestPipeline(
+            corpus_dir=corpus,
+            metamodel_dir=tmp_path / "meta",
+            screenshots_dir=tmp_path / "screenshots",
+            output_dir=tmp_path / "out",
+        )
+        manifest = pipeline.run()
+        ingested_names = {d.file_name for d in manifest.source_documents}
+        assert "top_level.txt" in ingested_names
+        assert "nested.txt" in ingested_names
+
+    def test_non_recursive_skips_subdirectory_files(self, tmp_path: Path) -> None:
+        """When recursive=False, files in subdirectories are not ingested."""
+        corpus = tmp_path / "corpus"
+        subdir = corpus / "inner"
+        subdir.mkdir(parents=True)
+        (corpus / "top.txt").write_text(
+            "Top-level file with enough content for chunking.\n\n"
+            "Second paragraph to confirm top-level is still ingested."
+        )
+        (subdir / "nested.txt").write_text(
+            "Nested file that should be ignored in non-recursive mode.\n\n"
+            "Second paragraph."
+        )
+        pipeline = IngestPipeline(
+            corpus_dir=corpus,
+            metamodel_dir=tmp_path / "meta",
+            screenshots_dir=tmp_path / "screenshots",
+            output_dir=tmp_path / "out",
+            recursive=False,
+        )
+        manifest = pipeline.run()
+        ingested_names = {d.file_name for d in manifest.source_documents}
+        assert "top.txt" in ingested_names
+        assert "nested.txt" not in ingested_names
+
+    def test_doc_id_stable_across_runs(self, tmp_path: Path) -> None:
+        """Re-ingesting the same file on a second run produces the same doc_id."""
+        corpus = tmp_path / "corpus"
+        corpus.mkdir()
+        (corpus / "stable.txt").write_text(
+            "Stable content that never changes between runs.\n\n"
+            "Second paragraph to ensure chunking produces output."
+        )
+        pipeline = IngestPipeline(
+            corpus_dir=corpus,
+            metamodel_dir=tmp_path / "meta",
+            screenshots_dir=tmp_path / "screenshots",
+            output_dir=tmp_path / "out",
+        )
+        m1 = pipeline.run()
+        m2 = pipeline.run()
+        ids_run1 = {d.file_name: d.doc_id for d in m1.source_documents}
+        ids_run2 = {d.file_name: d.doc_id for d in m2.source_documents}
+        assert ids_run1["stable.txt"] == ids_run2["stable.txt"]
+
 
 @pytest.mark.integration
 class TestBuildIngestor:

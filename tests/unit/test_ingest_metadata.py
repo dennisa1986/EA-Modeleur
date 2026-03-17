@@ -99,6 +99,42 @@ class TestDocIdFromPath:
         result = doc_id_from_path(f)
         assert result.startswith("doc-")
 
+    def test_same_name_same_content_same_id(self, tmp_path: Path) -> None:
+        """Same filename + same content → same doc_id regardless of directory."""
+        d1 = tmp_path / "dir1"
+        d2 = tmp_path / "dir2"
+        d1.mkdir()
+        d2.mkdir()
+        content = b"identical content bytes for fingerprinting" * 100
+        (d1 / "report.pdf").write_bytes(content)
+        (d2 / "report.pdf").write_bytes(content)
+        assert doc_id_from_path(d1 / "report.pdf") == doc_id_from_path(d2 / "report.pdf")
+
+    def test_same_name_different_content_different_id(self, tmp_path: Path) -> None:
+        """Same filename but different content → different doc_id."""
+        d1 = tmp_path / "dir1"
+        d2 = tmp_path / "dir2"
+        d1.mkdir()
+        d2.mkdir()
+        (d1 / "doc.txt").write_text("version A content is distinct here")
+        (d2 / "doc.txt").write_text("version B content is completely different")
+        assert doc_id_from_path(d1 / "doc.txt") != doc_id_from_path(d2 / "doc.txt")
+
+    def test_content_change_changes_id(self, tmp_path: Path) -> None:
+        """Modifying a file's content produces a new doc_id on next call."""
+        f = tmp_path / "mutable.txt"
+        f.write_text("original content version one")
+        id_before = doc_id_from_path(f)
+        f.write_text("completely changed content version two")
+        id_after = doc_id_from_path(f)
+        assert id_before != id_after
+
+    def test_large_file_stable_id(self, tmp_path: Path) -> None:
+        """doc_id is stable for large files (fingerprint reads at most 64 KiB)."""
+        f = tmp_path / "large.bin"
+        f.write_bytes(b"x" * 200_000)
+        assert doc_id_from_path(f) == doc_id_from_path(f)
+
 
 @pytest.mark.unit
 class TestBuildSourceDocument:
