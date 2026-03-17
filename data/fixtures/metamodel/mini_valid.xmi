@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Minimal valid EA XMI 2.1 metamodel fixture for unit/integration tests.
+  Contains: 2 element types, 1 association, 2 tagged values, 1 package.
+-->
+<xmi:XMI
+    xmi:version="2.1"
+    xmlns:xmi="http://www.omg.org/XMI"
+    xmlns:uml="http://www.eclipse.org/uml2/5.0.0/UML"
+    xmlns:ecore="http://www.eclipse.org/emf/2002/Ecore">
+
+  <xmi:Documentation exporter="Enterprise Architect" exporterVersion="17.1"/>
+
+  <uml:Model xmi:id="_model_001" name="EA_Model">
+
+    <packagedElement xmi:type="uml:Package" xmi:id="_pkg_001" name="Architecture">
+
+      <!-- Component element type with two required tagged values -->
+      <packagedElement xmi:type="uml:Class" xmi:id="_cls_component" name="Component">
+        <ownedAttribute xmi:type="uml:Property" xmi:id="_prop_name" name="name"/>
+        <ownedAttribute xmi:type="uml:Property" xmi:id="_prop_stereotype" name="stereotype"/>
+      </packagedElement>
+
+      <!-- Interface element type (no required tagged values) -->
+      <packagedElement xmi:type="uml:Interface" xmi:id="_cls_interface" name="ProvidedInterface"/>
+
+      <!-- Realizes association from Component to Interface -->
+      <packagedElement xmi:type="uml:Association" xmi:id="_assoc_realizes" name="realizes">
+        <memberEnd xmi:idref="_cls_component"/>
+        <memberEnd xmi:idref="_cls_interface"/>
+      </packagedElement>
+
+    </packagedElement>
+
+  </uml:Model>
+
+  <xmi:Extension extender="Enterprise Architect">
+    <elements>
+      <element xmi:id="_cls_component" xmi:type="uml:Class" name="Component" scope="public"/>
+      <element xmi:id="_cls_interface" xmi:type="uml:Interface" name="ProvidedInterface" scope="public"/>
+    </elements>
+    <stereotypes>
+      <stereotype name="component" appliesTo="Class"/>
+      <stereotype name="interface" appliesTo="Interface"/>
+    </stereotypes>
+  </xmi:Extension>
+
+</xmi:XMI>

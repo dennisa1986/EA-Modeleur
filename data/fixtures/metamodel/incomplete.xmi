@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Incomplete XMI fixture: well-formed XML but elements lack xmi:id attributes.
+  The parser should handle this gracefully (skip or warn) rather than crash.
+-->
+<xmi:XMI
+    xmi:version="2.1"
+    xmlns:xmi="http://www.omg.org/XMI"
+    xmlns:uml="http://www.eclipse.org/uml2/5.0.0/UML">
+
+  <uml:Model name="IncompleteModel">
+
+    <!-- Class with no xmi:id — should be skipped without error -->
+    <packagedElement xmi:type="uml:Class" name="OrphanClass"/>
+
+    <!-- Class with xmi:id but no name — should be skipped with warning -->
+    <packagedElement xmi:type="uml:Class" xmi:id="_cls_noname"/>
+
+    <!-- Valid minimal class — should be parsed -->
+    <packagedElement xmi:type="uml:Class" xmi:id="_cls_valid" name="ValidClass"/>
+
+  </uml:Model>
+
+</xmi:XMI>

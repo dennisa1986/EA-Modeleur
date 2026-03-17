@@ -1,0 +1,25 @@
+# Component Rules
+
+A Component MUST have a name tagged value.
+A Component MUST have a stereotype defined.
+Components MUST NOT have duplicate identifiers.
+
+# Naming Rules
+
+Element names MUST follow the naming convention: start with an uppercase letter.
+Package names MUST NOT contain spaces or special characters.
+
+# Connector Rules
+
+A Dependency connector MUST have both a source and a target defined.
+Circular dependencies SHALL NOT be allowed between components.
+
+# Package Rules
+
+Components MUST be placed in the Architecture package.
+Security elements MUST reside in the Security package.
+
+# Forbidden Patterns
+
+A Component MUST NOT realize another Component directly.
+Bidirectional associations between the same element types are FORBIDDEN.

@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Malformed XMI: unclosed tag — should raise PipelineError(META-001). -->
+<xmi:XMI xmlns:xmi="http://www.omg.org/XMI">
+  <uml:Model name="BrokenModel">
+    <packagedElement xmi:type="uml:Class" name="Oops"
