@@ -2,16 +2,23 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "canonical_model",
   "title": "CanonicalModel",
-  "description": "Language-neutral intermediate model produced by the MBSE pipeline.",
+  "description": "Mandatory language-neutral intermediate representation for the EA MBSE pipeline. The JSON Schema is authoritative; Pydantic models must stay in sync.",
   "type": "object",
   "required": ["schema_version", "elements", "relationships", "diagrams"],
+  "additionalProperties": false,
   "properties": {
     "schema_version": {
       "type": "string",
-      "description": "Schema version, e.g. '1.0'."
+      "description": "Schema version string, currently '1.0'."
     },
     "source_description": {
-      "type": "string"
+      "type": "string",
+      "default": ""
+    },
+    "packages": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/Package" },
+      "default": []
     },
     "elements": {
       "type": "array",
@@ -24,48 +31,245 @@
     "diagrams": {
       "type": "array",
       "items": { "$ref": "#/$defs/ModelDiagram" }
+    },
+    "requirement_links": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/RequirementLink" },
+      "default": []
+    },
+    "evidence_links": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/EvidenceLink" },
+      "default": []
+    },
+    "uncertainties": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/Uncertainty" },
+      "default": []
     }
   },
+
   "$defs": {
+
+    "SourceRef": {
+      "type": "object",
+      "description": "A single source location within a file.",
+      "required": ["file_path"],
+      "additionalProperties": false,
+      "properties": {
+        "file_path": { "type": "string", "description": "Absolute or repo-relative path." },
+        "page":      { "type": "integer", "description": "1-based PDF page number, if applicable." },
+        "line":      { "type": "integer", "description": "1-based line number in a text file, if applicable." },
+        "region":    { "type": "string",  "description": "Human-readable region, e.g. 'Figure 3'." }
+      }
+    },
+
+    "Provenance": {
+      "type": "object",
+      "description": "Full provenance record for a canonical artefact. Mandatory on all first-class artefacts.",
+      "required": ["sources", "derivation_method"],
+      "additionalProperties": false,
+      "properties": {
+        "sources": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/SourceRef" },
+          "minItems": 1
+        },
+        "derivation_method": {
+          "type": "string",
+          "description": "How the artefact was derived, e.g. 'text-extraction', 'ocr', 'rule-R-001'."
+        },
+        "confidence": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "description": "Optional confidence score in [0.0, 1.0] for AI-derived elements."
+        },
+        "notes": { "type": "string", "default": "" }
+      }
+    },
+
+    "TaggedValue": {
+      "type": "object",
+      "required": ["name", "value"],
+      "additionalProperties": false,
+      "properties": {
+        "name":  { "type": "string" },
+        "value": { "type": "string" },
+        "notes": { "type": "string", "default": "" }
+      }
+    },
+
+    "Parameter": {
+      "type": "object",
+      "required": ["id", "name"],
+      "additionalProperties": false,
+      "properties": {
+        "id":            { "type": "string" },
+        "name":          { "type": "string" },
+        "type_name":     { "type": "string" },
+        "direction":     { "type": "string", "enum": ["in", "out", "inout", "return"], "default": "in" },
+        "default_value": { "type": "string" }
+      }
+    },
+
+    "Attribute": {
+      "type": "object",
+      "required": ["id", "name"],
+      "additionalProperties": false,
+      "properties": {
+        "id":            { "type": "string" },
+        "name":          { "type": "string" },
+        "type_name":     { "type": "string" },
+        "visibility":    { "type": "string", "enum": ["public", "protected", "private", "package"], "default": "public" },
+        "initial_value": { "type": "string" },
+        "tagged_values": { "type": "array", "items": { "$ref": "#/$defs/TaggedValue" }, "default": [] },
+        "notes":         { "type": "string", "default": "" }
+      }
+    },
+
+    "Operation": {
+      "type": "object",
+      "required": ["id", "name"],
+      "additionalProperties": false,
+      "properties": {
+        "id":            { "type": "string" },
+        "name":          { "type": "string" },
+        "return_type":   { "type": "string" },
+        "visibility":    { "type": "string", "enum": ["public", "protected", "private", "package"], "default": "public" },
+        "parameters":    { "type": "array", "items": { "$ref": "#/$defs/Parameter" }, "default": [] },
+        "tagged_values": { "type": "array", "items": { "$ref": "#/$defs/TaggedValue" }, "default": [] },
+        "notes":         { "type": "string", "default": "" }
+      }
+    },
+
+    "Package": {
+      "type": "object",
+      "required": ["id", "name", "provenance"],
+      "additionalProperties": false,
+      "properties": {
+        "id":            { "type": "string" },
+        "name":          { "type": "string" },
+        "parent_id":     { "type": "string", "description": "Ref to parent Package.id; absent or null for root packages." },
+        "path":          { "type": "string", "default": "" },
+        "stereotype":    { "type": "string" },
+        "tagged_values": { "type": "array", "items": { "$ref": "#/$defs/TaggedValue" }, "default": [] },
+        "notes":         { "type": "string", "default": "" },
+        "provenance":    { "$ref": "#/$defs/Provenance" }
+      }
+    },
+
     "ModelElement": {
       "type": "object",
-      "required": ["id", "kind", "name"],
+      "required": ["id", "kind", "name", "provenance"],
+      "additionalProperties": false,
       "properties": {
-        "id":           { "type": "string" },
-        "ea_guid":      { "type": ["string", "null"] },
-        "kind":         { "type": "string" },
-        "name":         { "type": "string" },
-        "stereotype":   { "type": ["string", "null"] },
-        "package_path": { "type": "string" },
-        "attributes":   { "type": "array" },
-        "operations":   { "type": "array" },
-        "tagged_values":{ "type": "object" },
-        "notes":        { "type": "string" }
+        "id":            { "type": "string" },
+        "ea_guid":       { "type": "string", "description": "EA GUID from a prior export; absent for new elements." },
+        "kind":          { "type": "string", "enum": ["Class","Component","Actor","UseCase","Interface","Node","Artifact","Package","Requirement","Block","Activity","State"] },
+        "name":          { "type": "string" },
+        "stereotype":    { "type": "string" },
+        "package_id":    { "type": "string", "description": "Ref to Package.id; absent means model root." },
+        "attributes":    { "type": "array", "items": { "$ref": "#/$defs/Attribute" }, "default": [] },
+        "operations":    { "type": "array", "items": { "$ref": "#/$defs/Operation" }, "default": [] },
+        "tagged_values": { "type": "array", "items": { "$ref": "#/$defs/TaggedValue" }, "default": [] },
+        "notes":         { "type": "string", "default": "" },
+        "provenance":    { "$ref": "#/$defs/Provenance" }
       }
     },
+
     "ModelRelationship": {
       "type": "object",
-      "required": ["id", "kind", "source_id", "target_id"],
+      "required": ["id", "kind", "source_id", "target_id", "provenance"],
+      "additionalProperties": false,
       "properties": {
-        "id":           { "type": "string" },
-        "kind":         { "type": "string" },
-        "source_id":    { "type": "string" },
-        "target_id":    { "type": "string" },
-        "name":         { "type": "string" },
-        "stereotype":   { "type": ["string", "null"] },
-        "tagged_values":{ "type": "object" }
+        "id":            { "type": "string" },
+        "kind":          { "type": "string", "enum": ["Association","Dependency","Realization","Generalization","Aggregation","Composition","Flow","Trace","Refine","Derive","Satisfy","Verify"] },
+        "source_id":     { "type": "string" },
+        "target_id":     { "type": "string" },
+        "name":          { "type": "string", "default": "" },
+        "stereotype":    { "type": "string" },
+        "tagged_values": { "type": "array", "items": { "$ref": "#/$defs/TaggedValue" }, "default": [] },
+        "provenance":    { "$ref": "#/$defs/Provenance" }
       }
     },
+
+    "ElementBounds": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "x":      { "type": "integer", "default": 0 },
+        "y":      { "type": "integer", "default": 0 },
+        "width":  { "type": "integer", "default": 100 },
+        "height": { "type": "integer", "default": 60 }
+      }
+    },
+
+    "DiagramObject": {
+      "type": "object",
+      "required": ["id", "element_id"],
+      "additionalProperties": false,
+      "properties": {
+        "id":         { "type": "string" },
+        "element_id": { "type": "string", "description": "Ref to ModelElement.id or Package.id." },
+        "bounds":     { "$ref": "#/$defs/ElementBounds" }
+      }
+    },
+
     "ModelDiagram": {
       "type": "object",
-      "required": ["id", "name", "diagram_type"],
+      "required": ["id", "name", "diagram_type", "provenance"],
+      "additionalProperties": false,
       "properties": {
         "id":           { "type": "string" },
         "name":         { "type": "string" },
-        "diagram_type": { "type": "string" },
-        "package_path": { "type": "string" },
-        "element_ids":  { "type": "array", "items": { "type": "string" } }
+        "diagram_type": { "type": "string", "description": "EA diagram type, e.g. 'Logical', 'Component'." },
+        "package_id":   { "type": "string", "description": "Ref to Package.id; absent means model root." },
+        "objects":      { "type": "array", "items": { "$ref": "#/$defs/DiagramObject" }, "default": [] },
+        "provenance":   { "$ref": "#/$defs/Provenance" }
+      }
+    },
+
+    "RequirementLink": {
+      "type": "object",
+      "required": ["id", "source_id", "target_id", "link_type", "provenance"],
+      "additionalProperties": false,
+      "properties": {
+        "id":         { "type": "string" },
+        "source_id":  { "type": "string" },
+        "target_id":  { "type": "string" },
+        "link_type":  { "type": "string", "enum": ["derives","satisfies","verifies","refines","traces"] },
+        "notes":      { "type": "string", "default": "" },
+        "provenance": { "$ref": "#/$defs/Provenance" }
+      }
+    },
+
+    "EvidenceLink": {
+      "type": "object",
+      "required": ["id", "element_id", "provenance"],
+      "additionalProperties": false,
+      "properties": {
+        "id":               { "type": "string" },
+        "element_id":       { "type": "string" },
+        "provenance":       { "$ref": "#/$defs/Provenance" },
+        "relevance_score":  { "type": "number", "minimum": 0.0, "maximum": 1.0 },
+        "excerpt":          { "type": "string", "default": "" }
+      }
+    },
+
+    "Uncertainty": {
+      "type": "object",
+      "required": ["id", "element_id", "uncertainty_type", "level", "description"],
+      "additionalProperties": false,
+      "properties": {
+        "id":               { "type": "string" },
+        "element_id":       { "type": "string" },
+        "uncertainty_type": { "type": "string", "enum": ["extraction","classification","relationship","provenance","completeness"] },
+        "level":            { "type": "string", "enum": ["low","medium","high"] },
+        "description":      { "type": "string" },
+        "mitigation":       { "type": "string", "default": "" }
       }
     }
+
   }
 }

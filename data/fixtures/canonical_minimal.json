@@ -1,0 +1,197 @@
+{
+  "schema_version": "1.0",
+  "source_description": "IoT Sensor System — minimal fixture for Sprint 4 canonical tests",
+  "packages": [
+    {
+      "id": "a1b2c3d4-0001-0001-0001-000000000001",
+      "name": "System",
+      "path": "System",
+      "notes": "Root package for the IoT sensor system.",
+      "provenance": {
+        "sources": [{"file_path": "data/fixtures/canonical_minimal.json"}],
+        "derivation_method": "fixture"
+      }
+    },
+    {
+      "id": "a1b2c3d4-0001-0001-0001-000000000002",
+      "name": "Sensors",
+      "parent_id": "a1b2c3d4-0001-0001-0001-000000000001",
+      "path": "System.Sensors",
+      "provenance": {
+        "sources": [{"file_path": "data/fixtures/canonical_minimal.json"}],
+        "derivation_method": "fixture"
+      }
+    }
+  ],
+  "elements": [
+    {
+      "id": "a1b2c3d4-0001-0001-0002-000000000001",
+      "kind": "Class",
+      "name": "Sensor",
+      "stereotype": "block",
+      "package_id": "a1b2c3d4-0001-0001-0001-000000000002",
+      "attributes": [
+        {
+          "id": "a1b2c3d4-0001-0001-0003-000000000001",
+          "name": "reading",
+          "type_name": "float",
+          "visibility": "public"
+        },
+        {
+          "id": "a1b2c3d4-0001-0001-0003-000000000002",
+          "name": "unit",
+          "type_name": "string",
+          "visibility": "public",
+          "initial_value": "celsius"
+        }
+      ],
+      "operations": [
+        {
+          "id": "a1b2c3d4-0001-0001-0004-000000000001",
+          "name": "measure",
+          "return_type": "float",
+          "visibility": "public",
+          "parameters": []
+        }
+      ],
+      "tagged_values": [
+        {"name": "author", "value": "sprint4-fixture"},
+        {"name": "version", "value": "1.0"}
+      ],
+      "notes": "Represents a physical sensor device.",
+      "provenance": {
+        "sources": [
+          {"file_path": "data/fixtures/canonical_minimal.json", "region": "Sensor element definition"}
+        ],
+        "derivation_method": "fixture",
+        "confidence": 1.0
+      }
+    },
+    {
+      "id": "a1b2c3d4-0001-0001-0002-000000000002",
+      "kind": "Class",
+      "name": "DataCollector",
+      "package_id": "a1b2c3d4-0001-0001-0001-000000000001",
+      "attributes": [],
+      "operations": [
+        {
+          "id": "a1b2c3d4-0001-0001-0004-000000000002",
+          "name": "collect",
+          "return_type": "list",
+          "visibility": "public",
+          "parameters": [
+            {
+              "id": "a1b2c3d4-0001-0001-0005-000000000001",
+              "name": "sensors",
+              "type_name": "list[Sensor]",
+              "direction": "in"
+            }
+          ]
+        }
+      ],
+      "tagged_values": [],
+      "notes": "Collects readings from multiple sensors.",
+      "provenance": {
+        "sources": [
+          {"file_path": "data/fixtures/canonical_minimal.json", "region": "DataCollector element definition"}
+        ],
+        "derivation_method": "fixture"
+      }
+    },
+    {
+      "id": "a1b2c3d4-0001-0001-0002-000000000003",
+      "kind": "Requirement",
+      "name": "REQ-001 Sampling Rate",
+      "stereotype": "functionalRequirement",
+      "package_id": "a1b2c3d4-0001-0001-0001-000000000001",
+      "attributes": [],
+      "operations": [],
+      "tagged_values": [
+        {"name": "priority", "value": "high"},
+        {"name": "status", "value": "open"}
+      ],
+      "notes": "The system shall sample sensor readings at least once per second.",
+      "provenance": {
+        "sources": [
+          {"file_path": "data/fixtures/canonical_minimal.json", "region": "Requirements section"}
+        ],
+        "derivation_method": "fixture"
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "id": "a1b2c3d4-0001-0001-0006-000000000001",
+      "kind": "Association",
+      "source_id": "a1b2c3d4-0001-0001-0002-000000000002",
+      "target_id": "a1b2c3d4-0001-0001-0002-000000000001",
+      "name": "monitors",
+      "tagged_values": [],
+      "provenance": {
+        "sources": [{"file_path": "data/fixtures/canonical_minimal.json"}],
+        "derivation_method": "fixture"
+      }
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "a1b2c3d4-0001-0001-0007-000000000001",
+      "name": "System Overview",
+      "diagram_type": "Logical",
+      "package_id": "a1b2c3d4-0001-0001-0001-000000000001",
+      "objects": [
+        {
+          "id": "a1b2c3d4-0001-0001-0008-000000000001",
+          "element_id": "a1b2c3d4-0001-0001-0002-000000000001",
+          "bounds": {"x": 100, "y": 100, "width": 120, "height": 60}
+        },
+        {
+          "id": "a1b2c3d4-0001-0001-0008-000000000002",
+          "element_id": "a1b2c3d4-0001-0001-0002-000000000002",
+          "bounds": {"x": 300, "y": 100, "width": 140, "height": 60}
+        }
+      ],
+      "provenance": {
+        "sources": [{"file_path": "data/fixtures/canonical_minimal.json"}],
+        "derivation_method": "fixture"
+      }
+    }
+  ],
+  "requirement_links": [
+    {
+      "id": "a1b2c3d4-0001-0001-0009-000000000001",
+      "source_id": "a1b2c3d4-0001-0001-0002-000000000001",
+      "target_id": "a1b2c3d4-0001-0001-0002-000000000003",
+      "link_type": "satisfies",
+      "notes": "Sensor.measure() satisfies the sampling rate requirement.",
+      "provenance": {
+        "sources": [{"file_path": "data/fixtures/canonical_minimal.json"}],
+        "derivation_method": "fixture"
+      }
+    }
+  ],
+  "evidence_links": [
+    {
+      "id": "a1b2c3d4-0001-0001-0010-000000000001",
+      "element_id": "a1b2c3d4-0001-0001-0002-000000000001",
+      "provenance": {
+        "sources": [
+          {"file_path": "data/fixtures/canonical_minimal.json", "region": "Sensor definition"}
+        ],
+        "derivation_method": "fixture"
+      },
+      "relevance_score": 0.95,
+      "excerpt": "The Sensor block measures physical quantities and reports a float reading."
+    }
+  ],
+  "uncertainties": [
+    {
+      "id": "a1b2c3d4-0001-0001-0011-000000000001",
+      "element_id": "a1b2c3d4-0001-0001-0002-000000000002",
+      "uncertainty_type": "completeness",
+      "level": "low",
+      "description": "DataCollector attributes may be incomplete — source document had a partial diagram.",
+      "mitigation": "Review source document section 3.2 for additional attributes."
+    }
+  ]
+}
